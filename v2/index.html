@@ -438,7 +438,10 @@ var REGION_LABEL = {
   "near-north":"Near North", "sudbury-manitoulin":"Sudbury & Manitoulin",
   "algoma":"Algoma", "northwest":"Northwest", "cochrane-timmins":"Cochrane & Timmins"
 };
-var PAGE = 48;   // cards rendered at a time - see the note on photo billing below
+// Cards rendered per page. Measured 2026-08-19 in his real Chrome: 48 cards
+// queued 47 photo requests and only 15 had arrived after 5s. Every one of those
+// requests is billed, so a smaller page is both faster and cheaper.
+var PAGE = 24;
 var pageShown = PAGE;
 var CAT_LABEL = {};
 CATS.forEach(function(c){ if(c.id) CAT_LABEL[c.id] = c.label; });
