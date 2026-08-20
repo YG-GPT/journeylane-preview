@@ -528,43 +528,6 @@ function photoUrl(p){
 }
 function regionLabel(r){ return REGION_LABEL[r] || (r||"").replace(/-/g," "); }
 
-/* ── build the category strip ── */
-(function(){
-  var host = document.getElementById("cats");
-  CATS.forEach(function(c){
-    var n = c.id
-      ? RESULTS.filter(function(e){ return entryCats(e).indexOf(c.id)>-1; }).length
-      : RESULTS.length;
-    if(c.id && n===0) return;
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "cat" + (c.id===state.cat ? " on" : "");
-    b.dataset.cat = c.id;
-    b.innerHTML = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">'+c.icon+'</svg>'+
-                  '<span>'+c.label+'</span><span class="n">'+n+'</span>';
-    b.addEventListener("click", function(){
-      state.cat = c.id;
-      Array.prototype.forEach.call(host.children, function(el){ el.classList.toggle("on", el.dataset.cat===c.id); });
-      render();
-    });
-    host.appendChild(b);
-  });
-})();
-
-/* ── populate the selects from real data ── */
-(function(){
-  var regions = {};
-  OPS.forEach(function(o){ if(o.region) regions[o.region] = (regions[o.region]||0)+1; });
-  var keys = Object.keys(regions).sort(function(a,b){ return regions[b]-regions[a]; });
-  var fR = document.getElementById("fRegion"), qW = document.getElementById("qWhere");
-  keys.forEach(function(k){
-    var t = regionLabel(k)+" ("+regions[k]+")";
-    fR.appendChild(new Option(t, k));
-    qW.appendChild(new Option(regionLabel(k), k));
-  });
-  document.getElementById("liveCount").textContent = OPS.length + " verified operators";
-})();
-
 /* ── THE RESULTS MODEL (item-first, his order 2026-08-20) ──
    A result is either an ITEM (one rentable class from an operator who publishes
    a fleet) or a BUSINESS (an operator who publishes nothing — they stay exactly
@@ -605,6 +568,43 @@ var RESULTS = [];
 function entryCats(e){
   return e.kind === "item" ? [e.item.category] : (e.op.categories||[]);
 }
+
+/* ── build the category strip ── */
+(function(){
+  var host = document.getElementById("cats");
+  CATS.forEach(function(c){
+    var n = c.id
+      ? RESULTS.filter(function(e){ return entryCats(e).indexOf(c.id)>-1; }).length
+      : RESULTS.length;
+    if(c.id && n===0) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "cat" + (c.id===state.cat ? " on" : "");
+    b.dataset.cat = c.id;
+    b.innerHTML = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">'+c.icon+'</svg>'+
+                  '<span>'+c.label+'</span><span class="n">'+n+'</span>';
+    b.addEventListener("click", function(){
+      state.cat = c.id;
+      Array.prototype.forEach.call(host.children, function(el){ el.classList.toggle("on", el.dataset.cat===c.id); });
+      render();
+    });
+    host.appendChild(b);
+  });
+})();
+
+/* ── populate the selects from real data ── */
+(function(){
+  var regions = {};
+  OPS.forEach(function(o){ if(o.region) regions[o.region] = (regions[o.region]||0)+1; });
+  var keys = Object.keys(regions).sort(function(a,b){ return regions[b]-regions[a]; });
+  var fR = document.getElementById("fRegion"), qW = document.getElementById("qWhere");
+  keys.forEach(function(k){
+    var t = regionLabel(k)+" ("+regions[k]+")";
+    fR.appendChild(new Option(t, k));
+    qW.appendChild(new Option(regionLabel(k), k));
+  });
+  document.getElementById("liveCount").textContent = OPS.length + " verified operators";
+})();
 
 /* ── filtering ── */
 function matches(e){
