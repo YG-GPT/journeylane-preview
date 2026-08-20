@@ -163,9 +163,9 @@ img{display:block;max-width:100%}
 .card:hover .shot .ph.on{transform:scale(1.055)}
 .shot .noimg{position:absolute;inset:0;display:grid;place-items:center;color:var(--blue);opacity:.5}
 .shot .noimg svg{width:46px;height:46px;stroke:currentColor;stroke-width:1.4;fill:none}
-.shimmer{position:absolute;inset:0;background:linear-gradient(100deg,#E8F1F8 8%,#F4FAFD 22%,#E8F1F8 36%);background-size:220% 100%;animation:sh 1.5s linear infinite}
+.shimmer{position:absolute;inset:0;z-index:0;background:linear-gradient(100deg,#E8F1F8 8%,#F4FAFD 22%,#E8F1F8 36%);background-size:220% 100%;animation:sh 1.5s linear infinite}
 @keyframes sh{to{background-position:-220% 0}}
-.ph.ready ~ .shimmer{display:none}
+.slides{z-index:1}
 /* carousel */
 .slides{position:absolute;inset:0}
 .slides .ph{opacity:0;pointer-events:none}
@@ -523,13 +523,16 @@ function cardHTML(o){
   // photos 2 and 3 hold their URL in data-src and load only if someone actually
   // clicks through the carousel. Without this, one page view of 189 listings
   // would have fired ~500 billable requests.
+  // the shimmer is painted FIRST so the photo covers it once it arrives; it is
+  // also removed on load. (2026-08-19: it used to sit after the slides and hid
+  // every loaded photo behind itself.)
   var shots = photos.length
-    ? '<div class="slides">' + photos.map(function(p,i){
+    ? '<div class="shimmer"></div><div class="slides">' + photos.map(function(p,i){
         var u = photoUrl(p);
         return '<img class="ph'+(i===0?' on':'')+'" data-i="'+i+'" '+
                (i===0 ? 'src="'+u+'"' : 'data-src="'+u+'"')+
                ' alt="'+esc(o.name)+'" loading="lazy" decoding="async">';
-      }).join("") + '</div><div class="shimmer"></div>'
+      }).join("") + '</div>'
       + (photos.length>1
         ? '<button class="nav-a prev" aria-label="Previous photo"><svg viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg></button>'+
           '<button class="nav-a next" aria-label="Next photo"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>'+
@@ -624,8 +627,13 @@ function wireCards(){
   if(reset) reset.addEventListener("click", clearAll);
 
   grid.querySelectorAll(".ph").forEach(function(img){
-    if(img.complete && img.naturalWidth) img.classList.add("ready");
-    else img.addEventListener("load", function(){ img.classList.add("ready"); });
+    var done = function(){
+      img.classList.add("ready");
+      var sh = img.closest(".shot").querySelector(".shimmer");
+      if(sh) sh.remove();
+    };
+    if(img.complete && img.naturalWidth) done();
+    else img.addEventListener("load", done);
     img.addEventListener("error", function(){
       var shot = img.closest(".shot");
       if(shot && !shot.querySelector(".noimg")){
