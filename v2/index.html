@@ -1074,6 +1074,13 @@ function beauty(e){
   var priced = e.kind==="item" && (e.item.prices||[]).length ? 1 : 0;
   return (hasImg ? 1000 : 0) + r * 10 + priced * 5;
 }
+function rowLabel(label){
+  // lowercase plain words, keep acronyms: "Boats"->"boats", "ATVs" stays,
+  // "RV & trailers" stays as-is
+  return label.split(" ").map(function(w){
+    return /[A-Z]{2}/.test(w) ? w : w.toLowerCase();
+  }).join(" ");
+}
 var homeBuilt = false;
 function buildHomeRows(){
   if(homeBuilt) return;
@@ -1088,12 +1095,12 @@ function buildHomeRows(){
     pool.sort(function(a,b){ return beauty(b)-beauty(a); });
     var eight = pool.slice(0, 8);
     html += '<div class="hrow" data-cat="'+c.id+'">'+
-      '<div class="hrow-head"><h2>Popular '+c.label.toLowerCase()+'</h2>'+
+      '<div class="hrow-head"><h2>Popular '+rowLabel(c.label)+'</h2>'+
       '<button type="button" class="hrow-arrow" data-more="'+c.id+'" aria-label="See all '+c.label+'">'+ARROW+'</button></div>'+
       '<div class="hrow-scroll">'+
         eight.map(cardHTML).join("")+
         '<button type="button" class="hrow-more" data-more="'+c.id+'">'+
-          '<span class="mic">'+ARROW+'</span>See all '+c.label.toLowerCase()+'</button>'+
+          '<span class="mic">'+ARROW+'</span>See all '+rowLabel(c.label)+'</button>'+
       '</div></div>';
   });
   host.innerHTML = html;
