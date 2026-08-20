@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JourneyLane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --ink:#0B1C2C; --muted:#5A7386; --faint:#8AA3B5;
+  --line:#E2EDF4; --line-2:#DCEBF4;
+  --blue:#2098E0; --blue-deep:#1E8FD8; --indigo:#4870F8;
+  --cyan:#00B8C8; --teal:#0E7C86;
+  --wash:#F4FAFD; --wash-2:#EDF6FA; --white:#FFFFFF;
+  --shadow-sm:0 1px 2px rgba(11,28,44,.06), 0 1px 3px rgba(11,28,44,.04);
+  --shadow-md:0 4px 14px rgba(11,28,44,.09), 0 2px 6px rgba(11,28,44,.05);
+  --shadow-lg:0 12px 34px rgba(11,28,44,.14), 0 4px 12px rgba(11,28,44,.07);
+  --r-card:16px; --r-img:12px; --r-pill:999px;
+  --hdr:72px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--white); color:var(--ink);
+  font-family:'Instrument Sans',system-ui,-apple-system,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  padding-bottom:34px;
+}
+h1,h2,h3,.display{font-family:'Bricolage Grotesque',system-ui,sans-serif;letter-spacing:-.02em;line-height:1.12}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+img{display:block;max-width:100%}
+:focus-visible{outline:2.5px solid var(--blue);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+
+/* ─── HEADER ─── */
+.hdr{
+  position:sticky;top:0;z-index:900;background:rgba(255,255,255,.92);
+  backdrop-filter:saturate(180%) blur(12px);
+  border-bottom:1px solid var(--line);transition:box-shadow .2s;
+}
+.hdr.scrolled{box-shadow:var(--shadow-sm)}
+.hdr-in{height:var(--hdr);display:flex;align-items:center;gap:20px}
+.logo{display:flex;align-items:center;gap:9px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;letter-spacing:-.03em;flex:none}
+.logo-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--indigo),var(--blue) 55%,var(--cyan));display:grid;place-items:center;flex:none}
+.logo-mark svg{width:17px;height:17px}
+.hdr-nav{display:flex;align-items:center;gap:26px;margin-left:auto;font-size:14.5px;font-weight:500;color:var(--muted)}
+.hdr-nav a:hover{color:var(--ink)}
+.hdr-cta{
+  border:1px solid var(--line-2);border-radius:var(--r-pill);
+  padding:9px 17px;font-weight:600;font-size:14px;color:var(--ink);
+  transition:box-shadow .18s,border-color .18s,transform .18s;
+}
+.hdr-cta:hover{box-shadow:var(--shadow-md);border-color:transparent;transform:translateY(-1px)}
+/* compact search that appears once you scroll past the hero */
+.hdr-search{
+  margin-left:auto;display:none;align-items:center;gap:0;
+  border:1px solid var(--line-2);border-radius:var(--r-pill);
+  box-shadow:var(--shadow-sm);overflow:hidden;max-width:420px;flex:1;
+  transition:box-shadow .18s;
+}
+.hdr.compact .hdr-search{display:flex}
+.hdr.compact .hdr-nav .nav-link{display:none}
+.hdr-search:hover{box-shadow:var(--shadow-md)}
+.hdr-search input{border:0;outline:0;padding:11px 16px;font:inherit;font-size:14px;flex:1;min-width:0;background:none}
+.hdr-search .go{background:linear-gradient(135deg,var(--indigo),var(--blue));width:34px;height:34px;border-radius:50%;display:grid;place-items:center;margin-right:5px;flex:none}
+.hdr-search .go svg{width:15px;height:15px;stroke:#fff}
+.burger{display:none;width:40px;height:40px;border:1px solid var(--line-2);border-radius:var(--r-pill);place-items:center;margin-left:auto}
+
+/* ─── HERO ─── */
+.hero{position:relative;background:linear-gradient(168deg,var(--wash) 0%,var(--wash-2) 48%,#DFF6F9 100%);overflow:hidden;border-bottom:1px solid var(--line)}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+.hero::before{width:520px;height:520px;right:-160px;top:-220px;background:radial-gradient(circle,rgba(32,152,224,.16),transparent 66%)}
+.hero::after{width:420px;height:420px;left:-140px;bottom:-220px;background:radial-gradient(circle,rgba(0,184,200,.14),transparent 66%)}
+.hero-in{position:relative;padding:clamp(44px,6.5vw,78px) 0 clamp(30px,4vw,44px);text-align:center;max-width:800px;margin:0 auto}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.82);
+  border:1px solid var(--line-2);border-radius:var(--r-pill);
+  padding:6px 15px;font-size:12.5px;font-weight:600;color:var(--teal);
+  letter-spacing:.02em;margin-bottom:20px;box-shadow:var(--shadow-sm);
+}
+.dot-live{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 3px rgba(0,184,200,.2)}
+.hero h1{font-size:clamp(2.1rem,5.4vw,3.5rem);font-weight:800;margin-bottom:16px}
+.hero h1 .grad{background:linear-gradient(120deg,var(--indigo),var(--blue) 52%,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lede{font-size:clamp(15.5px,1.9vw,18.5px);color:var(--muted);max-width:600px;margin:0 auto 30px;line-height:1.6}
+
+/* the search bar — the first screen is functional, not decorative */
+.search{
+  display:flex;align-items:stretch;background:var(--white);
+  border:1px solid var(--line-2);border-radius:var(--r-pill);
+  box-shadow:var(--shadow-lg);max-width:660px;margin:0 auto;
+  overflow:hidden;transition:box-shadow .2s;
+}
+.search:focus-within{box-shadow:0 16px 40px rgba(11,28,44,.18)}
+.search .fld{flex:1;display:flex;flex-direction:column;justify-content:center;padding:11px 22px;text-align:left;min-width:0;position:relative}
+.search .fld + .fld::before{content:"";position:absolute;left:0;top:22%;bottom:22%;width:1px;background:var(--line)}
+.search label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+.search input,.search select{border:0;outline:0;font:inherit;font-size:15px;font-weight:500;background:none;width:100%;min-width:0;color:var(--ink);cursor:pointer}
+.search input{cursor:text}
+.search select{appearance:none;-webkit-appearance:none}
+.search .submit{
+  margin:7px;flex:none;width:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--indigo),var(--blue) 60%,var(--cyan));
+  display:grid;place-items:center;transition:transform .18s,filter .18s;
+}
+.search .submit:hover{transform:scale(1.05);filter:brightness(1.06)}
+.search .submit svg{width:19px;height:19px;stroke:#fff;stroke-width:2.4}
+.hero-trust{margin-top:22px;display:flex;flex-wrap:wrap;justify-content:center;gap:9px 22px;font-size:13.5px;color:var(--muted)}
+.hero-trust span{display:inline-flex;align-items:center;gap:7px}
+.hero-trust svg{width:15px;height:15px;stroke:var(--teal);stroke-width:2.2;fill:none;flex:none}
+
+/* ─── CATEGORY STRIP (sticky under header) ─── */
+.cats-outer{position:sticky;top:var(--hdr);z-index:800;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.cats{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:8px 0 0;scroll-behavior:smooth}
+.cats::-webkit-scrollbar{display:none}
+.cat{
+  flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:9px 15px 11px;border-bottom:2.5px solid transparent;
+  color:var(--faint);font-size:12.5px;font-weight:600;white-space:nowrap;
+  transition:color .16s,border-color .16s,opacity .16s;opacity:.82;
+}
+.cat svg{width:23px;height:23px;stroke:currentColor;stroke-width:1.7;fill:none}
+.cat:hover{color:var(--muted);opacity:1}
+.cat.on{color:var(--ink);border-bottom-color:var(--ink);opacity:1}
+.cat .n{font-size:10.5px;font-weight:600;color:var(--faint)}
+.cat.on .n{color:var(--muted)}
+
+/* ─── FILTER BAR ─── */
+.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:20px 0 4px}
+.sel{
+  display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);
+  border-radius:var(--r-pill);padding:9px 15px;font-size:13.5px;font-weight:600;
+  background:var(--white);transition:box-shadow .16s,border-color .16s;
+}
+.sel:hover{box-shadow:var(--shadow-sm)}
+.sel select{border:0;outline:0;font:inherit;background:none;appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:2px}
+.sel svg{width:13px;height:13px;stroke:var(--muted);stroke-width:2.4;fill:none;flex:none}
+.sel.active{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.chip-clear{margin-left:2px;font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.chip-clear:hover{color:var(--ink)}
+.map-toggle{margin-left:auto;display:inline-flex;align-items:center;gap:9px;background:var(--ink);color:#fff;border-radius:var(--r-pill);padding:10px 18px;font-size:13.5px;font-weight:600;transition:filter .16s,transform .16s}
+.map-toggle:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.map-toggle svg{width:15px;height:15px;stroke:#fff;stroke-width:2.2;fill:none}
+.count{padding:16px 0 18px;font-size:14.5px;color:var(--muted)}
+.count b{color:var(--ink);font-weight:700}
+
+/* ─── DIRECTORY LAYOUT ─── */
+.dir{display:grid;grid-template-columns:1fr;gap:26px;align-items:start;padding-bottom:56px}
+.dir.split{grid-template-columns:minmax(0,1fr) minmax(0,42%)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:28px 22px}
+.dir.split .grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+#mapPane{display:none;position:sticky;top:calc(var(--hdr) + 74px);height:calc(100vh - var(--hdr) - 106px);border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line-2);box-shadow:var(--shadow-md)}
+.dir.split #mapPane{display:block}
+
+/* ─── CARD ─── */
+.card{display:flex;flex-direction:column;gap:11px;position:relative}
+.shot{position:relative;aspect-ratio:20/17;border-radius:var(--r-img);overflow:hidden;background:linear-gradient(125deg,#EEF3FE,#E4F5FA 60%,#DDF6F8)}
+.shot .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s cubic-bezier(.2,.7,.3,1);opacity:0}
+.shot .ph.ready{opacity:1}
+.card:hover .shot .ph.on{transform:scale(1.055)}
+.shot .noimg{position:absolute;inset:0;display:grid;place-items:center;color:var(--blue);opacity:.5}
+.shot .noimg svg{width:46px;height:46px;stroke:currentColor;stroke-width:1.4;fill:none}
+.shimmer{position:absolute;inset:0;background:linear-gradient(100deg,#E8F1F8 8%,#F4FAFD 22%,#E8F1F8 36%);background-size:220% 100%;animation:sh 1.5s linear infinite}
+@keyframes sh{to{background-position:-220% 0}}
+.ph.ready ~ .shimmer{display:none}
+/* carousel */
+.slides{position:absolute;inset:0}
+.slides .ph{opacity:0;pointer-events:none}
+.slides .ph.on{opacity:1;pointer-events:auto}
+.nav-a{
+  position:absolute;top:50%;transform:translateY(-50%);width:30px;height:30px;
+  border-radius:50%;background:rgba(255,255,255,.94);box-shadow:var(--shadow-md);
+  display:grid;place-items:center;opacity:0;transition:opacity .18s,transform .18s;z-index:3;
+}
+.card:hover .nav-a{opacity:1}
+.nav-a:hover{transform:translateY(-50%) scale(1.09)}
+.nav-a.prev{left:9px}.nav-a.next{right:9px}
+.nav-a svg{width:13px;height:13px;stroke:var(--ink);stroke-width:2.6;fill:none}
+.dots{position:absolute;bottom:9px;left:0;right:0;display:flex;justify-content:center;gap:5px;z-index:3}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.62);transition:background .2s,transform .2s}
+.dots i.on{background:#fff;transform:scale(1.18)}
+.save{
+  position:absolute;top:10px;right:10px;z-index:4;width:32px;height:32px;
+  display:grid;place-items:center;transition:transform .16s;
+}
+.save:hover{transform:scale(1.12)}
+.save svg{width:22px;height:22px;stroke:#fff;stroke-width:2;fill:rgba(11,28,44,.32);filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+.save.on svg{fill:#F4364C;stroke:#fff}
+.tag{
+  position:absolute;top:10px;left:10px;z-index:3;background:rgba(255,255,255,.95);
+  border-radius:var(--r-pill);padding:5px 11px;font-size:11.5px;font-weight:700;
+  color:var(--ink);box-shadow:var(--shadow-sm);letter-spacing:.01em;
+}
+.credit{position:absolute;bottom:7px;left:10px;z-index:3;font-size:9.5px;color:rgba(255,255,255,.9);text-shadow:0 1px 3px rgba(0,0,0,.5);opacity:0;transition:opacity .2s}
+.card:hover .credit{opacity:1}
+.c-body{display:flex;flex-direction:column;gap:3px}
+.c-top{display:flex;align-items:baseline;gap:10px}
+.c-name{font-weight:700;font-size:15.5px;letter-spacing:-.01em;line-height:1.3;flex:1;min-width:0}
+.c-rate{flex:none;display:inline-flex;align-items:center;gap:3px;font-size:13.5px;font-weight:600;white-space:nowrap}
+.c-rate svg{width:12px;height:12px;fill:var(--ink)}
+.c-rate .rc{color:var(--faint);font-weight:500;font-size:12.5px}
+.c-where{color:var(--muted);font-size:13.5px}
+.c-rents{color:var(--faint);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-price{font-size:14px;margin-top:3px}
+.c-price b{font-weight:700}
+.c-price .none{color:var(--faint);font-weight:500}
+.c-acts{display:flex;gap:8px;margin-top:9px}
+.act{
+  flex:1;text-align:center;border:1px solid var(--line-2);border-radius:10px;
+  padding:8px 10px;font-size:13px;font-weight:600;transition:border-color .16s,background .16s,transform .16s;
+}
+.act:hover{border-color:var(--ink);transform:translateY(-1px)}
+.act.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.act.primary:hover{filter:brightness(1.18)}
+
+.empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--muted)}
+.empty svg{width:46px;height:46px;stroke:var(--faint);stroke-width:1.5;fill:none;margin:0 auto 16px}
+.empty h3{font-size:19px;margin-bottom:7px;color:var(--ink)}
+.empty button{margin-top:18px;background:var(--ink);color:#fff;border-radius:var(--r-pill);padding:10px 22px;font-weight:600;font-size:14px}
+
+/* ─── HOW IT WORKS ─── */
+.band{background:var(--wash);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:clamp(48px,6vw,76px) 0}
+.band h2{font-size:clamp(1.6rem,3.3vw,2.3rem);font-weight:700;text-align:center;margin-bottom:12px}
+.band .sub{text-align:center;color:var(--muted);max-width:560px;margin:0 auto 44px;font-size:15.5px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
+.step{background:var(--white);border:1px solid var(--line-2);border-radius:var(--r-card);padding:26px 24px;box-shadow:var(--shadow-sm);transition:transform .2s,box-shadow .2s}
+.step:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.step .ic{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#EEF3FE,#DDF6F8);display:grid;place-items:center;margin-bottom:15px}
+.step .ic svg{width:21px;height:21px;stroke:var(--blue-deep);stroke-width:2;fill:none}
+.step h3{font-size:16.5px;font-weight:700;margin-bottom:7px}
+.step p{color:var(--muted);font-size:14px;line-height:1.6}
+
+/* ─── OPERATOR CTA ─── */
+.op-cta{padding:clamp(48px,6vw,76px) 0}
+.op-in{
+  background:linear-gradient(135deg,#0B1C2C,#12324E 55%,#0E7C86);
+  border-radius:24px;padding:clamp(32px,5vw,58px);color:#fff;text-align:center;
+  position:relative;overflow:hidden;
+}
+.op-in::after{content:"";position:absolute;width:400px;height:400px;right:-130px;top:-170px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,200,.3),transparent 68%)}
+.op-in h2{font-size:clamp(1.55rem,3.3vw,2.2rem);font-weight:700;margin-bottom:14px;position:relative}
+.op-in p{color:rgba(255,255,255,.8);max-width:520px;margin:0 auto 28px;font-size:15.5px;position:relative}
+.op-in .btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative}
+.btn-w{background:#fff;color:var(--ink);border-radius:var(--r-pill);padding:12px 26px;font-weight:700;font-size:14.5px;transition:transform .16s}
+.btn-w:hover{transform:translateY(-2px)}
+.btn-o{border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:var(--r-pill);padding:12px 26px;font-weight:600;font-size:14.5px;transition:background .16s}
+.btn-o:hover{background:rgba(255,255,255,.12)}
+
+/* ─── FOOTER ─── */
+footer{background:var(--wash-2);border-top:1px solid var(--line);padding:44px 0 34px;font-size:13.5px;color:var(--muted)}
+.f-top{display:flex;flex-wrap:wrap;gap:26px;justify-content:space-between;align-items:flex-start;padding-bottom:26px;border-bottom:1px solid var(--line)}
+.f-links{display:flex;flex-wrap:wrap;gap:14px 26px}
+.f-links a:hover{color:var(--ink)}
+.f-bot{padding-top:20px;display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:space-between;font-size:12.5px;color:var(--faint)}
+
+/* ─── MOBILE ─── */
+@media (max-width:900px){
+  .dir.split{grid-template-columns:1fr}
+  .dir.split #mapPane{position:relative;top:0;height:60vh;order:-1}
+}
+@media (max-width:760px){
+  .hdr-nav .nav-link{display:none}
+  .search{flex-wrap:wrap;border-radius:22px;padding:4px}
+  .search .fld{flex:1 1 100%;padding:10px 16px}
+  .search .fld + .fld::before{left:16px;right:16px;top:0;bottom:auto;width:auto;height:1px}
+  .search .submit{flex:1 1 100%;width:auto;height:46px;border-radius:var(--r-pill);margin:6px 4px 4px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(100%,1fr));gap:26px}
+  .map-toggle{margin-left:0;width:100%;justify-content:center}
+  .filters{gap:8px}
+}
+</style>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<script>window.__OPERATORS = [{"id": "centre-plein-air-lac-dudley", "name": "Centre Plein Air du Lac Dudley", "categories": ["boat"], "town": "Notre-Dame-de-Pontmain", "region": "outaouais", "lat": 46.3, "lng": -75.58, "blurb": "Lakeside outdoor centre renting pontoon boats and motorboats on Lac Dudley in the northern Outaouais.", "rents": ["pontoon boats", "motorboats"], "priceSignal": null, "phone": "819-597-2391", "website": "https://cpalacdudley.net", "bookingMode": "phone-only", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://cpalacdudley.net", "placeId": "ChIJBU97kMMZ0EwR4cZYG55KH_0", "rating": 4.4, "reviewCount": 41, "photos": [{"name": "places/ChIJBU97kMMZ0EwR4cZYG55KH_0/photos/AWCwydiFVrCrwYiFSsRsp3MmrC1ZLYjSWusFo6oiG19d7BO7mOO1xKKOuttQsxuCrUgOkegdBrpsGr9d_B0_1vlhzYhUSTjIFxt5X_T9jt5DXcfLjy_fL4OIns6kSaC78y5WTTstAg8_jrEikrHmsufnywuIVNuvo8pN_WCCinenqzuMFaOZNvfOHmMwLJ8ucBA1SSNyaPMwq7bW-7OzcsAFxwyO_36zjzJgbWFmxQYFCh3AzUtlpuoK8fHo0yNvQJ6o-XOW48ku9VkH2yBjFN-0wpDP5KHxLlIkGAJdqy6BW-x0X7sJTBt0D8-rAZzIa55jwz3HnVqasygDwygJGoUVjfSsOcNQ-cCR0IS_Ht_3Q9T-v2Mds9a2NSIA9To2rHegwF5yNP3OV6OULX9wM8L0duf_IAc7Xyf_g4GtR6Ab5NjHpLsP", "credit": "Carmen LaRue Grijalva"}, {"name": "places/ChIJBU97kMMZ0EwR4cZYG55KH_0/photos/AWCwydjdy5KYPLX0EUPs4NZ6MAzWxAV0MVmfTJHPR5OQWUdCIv3Gpn1aEtflEfKEQ889cpTAGgg9lpX7H9POtkripjpYW8hO4WXQJiW6IuxYGLHkDeanGz141WLvQVhSvWUedxXJrkVfL9cl3iRlh0YMLRsyJJDpq5FiwjD0P43x_GNo7kOt6ir4xIBvhV0uDC7FRC4ZHHhBdhAFXxfirbw0H73fLwk5ZYDAUs0nKIPiL5EzTCCOm8WYKVM3n8xJx4HBKDWT1tzsveZSS_NG9u27uzfoXsdNIm6_r65y0G3_UHTkyNGk5GMGMzSXoM-mid8bThUZvEdwehp1Aws9x75sTjm6TEwVJV9UqB5IhKekzgoT6nlpOOqtUE4Ks1HKTOHgNVQ38jYUr8XJilvVvfNXjDbxMnljqf3lhVTSJVnX9btT_k06", "credit": "Yasmeen G"}, {"name": "places/ChIJBU97kMMZ0EwR4cZYG55KH_0/photos/AWCwydjOqzXI447tofS5O5AGJsHHlSdCd07OAwuxSN_Uwj_V4K-q0OvG_Z-wR4C8LUMscBmX25AL-fHfu2Rcn4R3O_uKFz05KefKrhqYhQPOv-25DDu01reYVL5na2_eHnOM6SZPP4oCpGrFtKd8E49PTZC2_I6Cupoh_lo0vMPiITZmH58V3lV3MAWBovSfjXXmRI3Q4Y3a22BgaTp5pW2RO4RNgVZ7IJiQPBuuQvG0xmBB9v4Eh1GmA4cH_IUVhPrAoK0PJgu_3KRFP2sLKqQkJxuVccbq1qj99EDC_13KAM5rast5QpqDNW65fbGITaKzoKaIwAP09z7KGIcNdd-Tj9n490Brvk25GwL0UdMVPPOkojIdOf2EoDIBTfEbPUSlR9BXjfsCJHzBdv_VVNFruhuHCP0IQljRXaJQoFOFhOBkD7va", "credit": "Marjolaine Loof"}]}, {"id": "location-urbaine", "name": "Location Urbaine (Urban Rentals)", "categories": ["boat"], "town": "Gatineau", "region": "outaouais", "lat": 45.48, "lng": -75.7, "blurb": "Gatineau waterfront outfit renting 10-person pontoon boats and captained pontoon cruises on the Ottawa River.", "rents": ["pontoon boats", "captained pontoon cruises"], "priceSignal": null, "phone": "819-271-9697", "website": "https://www.locationurbaine.com", "bookingMode": "unknown", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://www.locationurbaine.com/"}, {"id": "escape-tours-rentals", "name": "Escape Tours and Rentals", "categories": ["kayak-canoe", "ebike"], "town": "Ottawa", "region": "outaouais", "lat": 45.44, "lng": -75.69, "blurb": "Riverside and downtown rental operation offering single and tandem kayaks, paddleboards, and regular and electric bikes by the Ottawa River.", "rents": ["kayaks", "tandem kayaks", "paddleboards", "bikes", "e-bikes"], "priceSignal": "from $15/hr (bikes), $30/hr (kayaks)", "phone": "343-322-7407", "website": "https://escapetoursrentals.ca", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://escapetoursrentals.ca/ottawa-gatineau-paddleboard-sup-kayak-bike-rentals/", "placeId": "ChIJO80UYHwFzkwRS_Y0ff8zWkY", "rating": 5, "reviewCount": 105, "photos": [{"name": "places/ChIJO80UYHwFzkwRS_Y0ff8zWkY/photos/AWCwydhNGmrFodR-frBmlHvNVKyZvQG7T8ZdSVX547evS_klCh57_Lz1pItxLT25olwX42abgBeZU_tS1RUMDfXPMGr8wsolrLV0qAqbQCNPmmzdfzY1okIhbNeQpSsxqNcQHFf_8Oi4K61dTPtq8YMMpx8ldHuBIWnvqWAC7E-K2g-z0ioz1SyKwZPbAkJKJaqNw65Zcp9bXAnp1jNyTFT-9ChHFhGTKalKrcc3Zc9sXa6Zb7q6eueyitu9mqhvdgf0u7fkVdqri2AS5HoEtPgjVk5a9U5r8E6whF6Lgwh50hd_Z5U5HXa1nnU5tsop-4QVXoxkqdyMO2k4YsSWXMYP49UtAfSfFeAGHMAhYDCEktl9FyLeVYOIz21Gdt1qcrVQR5vdP0h9ewQxwAcnb4_ajp3NFfh2RPcbLTxfB-CV4flRrVlTg_OkIM-tqqXzHDUO", "credit": "Escape Kayak Tours and Rentals- Ottawa"}, {"name": "places/ChIJO80UYHwFzkwRS_Y0ff8zWkY/photos/AWCwydj1apLSxVOgrNmtt-n7BME_WDnFvJZ-isFXPtXvnR3I7LNGHEjSZhf0IS4pRyLt8UzfytPmQpZeyJMWV9p-Z3HKfyxAispJJdD2bZ6tJ61dNzRTaY9WywHO7p6Z8wuDnSGGQGm0b6oHYZ-cEOeDeOxgTPmxI3ZRRAl_J64vJSm6UAo9hcLuCqH2TqDP3jaYq8xurS2j1vkKrueQM3a0GOKNgWsyXxJCk4v_MY7mOpE0nBGiA_7fnMwdj_9kUq9TqBu8FxL4jGew2z5YiO2kqF32_Ek5K66MU46sShEARyZEZ1Nf-7LIgdFGNvov5xHwbUXPqhpG1PuTgKzOycZWEg9UXLoyybIaKp_ravh5uMNO0ZcLrbmXBN-wgxMjxUpMBpjPxVFQjwCmldYkBIhbZ33WJoMqZf521a1Jet7VZU806hj-1oMzWlpwC948CA", "credit": "Escape Kayak Tours and Rentals- Ottawa"}, {"name": "places/ChIJO80UYHwFzkwRS_Y0ff8zWkY/photos/AWCwydiBQt0pqwND7DrJjdZbRbEsXr09-WTW_sn8mf1Nq2aFa-zx1u5Ftk8rlZNIfE8IQkT-xS9BrKHdHEDREBSjGtVW2p7g7f4zM82-WCaMx_BOpqWfTKGM_lIB5PefmVHKDK-Su8n1z7PfU0NDIW7G4WNzoLQoh0w0ud9aPSLDPN4oXsV8GityPja1snwnH-sv1b3fRt4i5ajJWrYHnlQ0MH_F2sx_tMWPMp8eY0SSUpPcDIkRioYvc28T6oqyK7HOxJ4_86QcLur12x3uBmoMPiGf6yAOho1soJbzeOgRo6pULDLZrlPKnTfTFp25vzcSUUjQsNK0Sx0SyjHf1m_E4pH0lj5hldKURBv4E9pjHFBDFUcdLkAUAAT0dv4rBtp3VOjCaGbNvWCyAawCGGboLIGGb3ehBhM4FAoChOBObCtuQRHPzTTrpbPK33gDiQ", "credit": "Escape Kayak Tours and Rentals- Ottawa"}]}, {"id": "constance-bay-rentals", "name": "Constance Bay Rentals", "categories": ["jet-ski"], "town": "Constance Bay", "region": "outaouais", "lat": 45.5, "lng": -76.09, "blurb": "Small operator renting Sea-Doo GTX PRO 130 personal watercraft, launched for you at Constance Bay on the Ottawa River.", "rents": ["Sea-Doo personal watercraft"], "priceSignal": null, "phone": "613-897-2237", "website": "https://www.constancebayrentals.com", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://www.constancebayrentals.com/", "placeId": "ChIJPynKKf3x0UwRFwiyFvfRxC8", "rating": 4.6, "reviewCount": 91, "photos": [{"name": "places/ChIJPynKKf3x0UwRFwiyFvfRxC8/photos/AWCwydiFlRXz_KU_j34ArrETk4UknhhaA3OOlOF5jkvx_XyIlJLXIoqajKD7xP7BWjQuvCf6OLD_foiCV3GiJegH6_trP8d6COEXJ3gcjRkV5uDOJeO3PlxDl1IITdByFGUciQ6Ygs3hKO6gDGV4cNcST_iepNiJI8Y-VUpucyVIuSw5U_DIu59c0Yg50hTaLNnR2rzTsD8q6wlCdBKTKSstTX10a6-z2wfisLv6ZOPUxy7WFPRiAL8EYvF8hbUgWnZhcbcy2m3ER7cvG5rOOX6x1-Scz71GUhVI2sCRYdwS_Z1D1aw9py1-isaF3C81WzGkY73Kh3KKDnPCMdtxwbbh85oV87ThV21GgkT-fXCUpfBxvlBSdajPtKbSmU-tQjYcbtM9zL_M1Pujh4NFLnI4TIjAlA6feWP2R9klgrsaOea1aNGGwrGB4AEiNvMqOQ3Q", "credit": "Constance Bay Rentals"}, {"name": "places/ChIJPynKKf3x0UwRFwiyFvfRxC8/photos/AWCwydiw9hdHt5kUwY401tR1CSN1FtrGqLEsVT9Oa7IKa1ehJChBJgxH6uUzzlGFidE8Shf3yccVbSawBBpP74ehP7kc1cYWChQF-lAQdbPtVnjYdZF0YyYHPfXkZ25PcgCE-tXp09XWfiQkgRYHY6rwLw_Hei2vTv7rLWdqf2h3e-55u_YN6ufWeqIrkGtK3OjNS-z18upN8WRYR2cp-VzTogtLbk_Uk2apjUocBW1yoSWBAARlI5JZRE__voQeC36nyUXMm92oB2Oq3R-u7gJtc8SttxBgjCoQjaCa0tlD40UHgM5mUBn0t_Ly5lm0SKSRf7vRrkKfhhHer2j02v5SNqXp2mn9TboXcDH0Bil_rPcIKfWzla2wxBuAVN7WPRTeLVTCgSpxPI587VcLrEtKgmn2_EFJVdwQPfB1IwLTfvja0DBNqZ-v81kqRm2YLxNx", "credit": "Sharuka Thayaranjan"}, {"name": "places/ChIJPynKKf3x0UwRFwiyFvfRxC8/photos/AWCwydhXqfKbsfEHhkRRunVDWPcwKqO6kDaZ-ZP3TUbu3hE-qTVG8H6P3EDZ3LRfH5gO8lBTh5I5vg27SlcFeRGZRDyt6UkhTfpmepWOGXH7dJTCvTEmRtCAlHJnushkerBOMWpXv3Ff35JZ2ZfeyllIVWMDp5ht_rC9TkfbI2UAfKbras9Cs3kn_D_jrycN_stRYTo2OhlnTFYfQPUrIYPCh8IEL7TtY6-N4tVs9puNMN_J9F78QRccx1QmiQi1jhtoE-kj22cyW2r7Pwpm9S4R-eJMAEJOnfC4d-9EylFCEiS9comXi-TbFeNsbufXjFZxYQn-MTYuvLmQVDrrF9ihYGd6XofX9xDvN2y8p-tuu2rrHcAnSAaqewF_ejgHUCWwGT7CnQ3Gtps-gTRifRESyJX8yKNzD9uOUdAPLLjPP_t9-NZ_dxgCN38Rx8rp3w", "credit": "Michael"}]}, {"id": "peche-blanche-gatineau", "name": "Peche Blanche Gatineau", "categories": ["ice-hut"], "town": "Gatineau (Masson-Angers)", "region": "outaouais", "lat": 45.55, "lng": -75.42, "blurb": "Ice fishing village on the Ottawa River renting from a fleet of over 200 cabins, with bait and hole-drilling service on site.", "rents": ["ice fishing cabins", "fishing equipment"], "priceSignal": null, "phone": "819-281-9733", "website": "https://pecheblanchegatineau.com", "bookingMode": "phone-only", "siteQuality": "unknown", "verified": "2026-08-15", "source": "https://www.bonjourquebec.com/en-us/listing/to-see-and-do/peche-blanche-gatineau/3lp2", "placeId": "ChIJx11jxzgUzkwR1xHL9KR6CFE", "rating": 4.5, "reviewCount": 74, "photos": [{"name": "places/ChIJx11jxzgUzkwR1xHL9KR6CFE/photos/AWCwydhqbVrwWK6u4u7MEPveivmJ1yV5YDmtiEWdTPT4vYPntRY3EQ_FCpyS4EEdPEprp9YVKoe71By4ZjQLqCOsWwHA14xRlpPAvLA7ZAZQdmjNV5pcTYerOej1zZ_8Ib79LyO-8bDJVGmhDc69W95kZfTyW6Ns8jq0PaER2dJ57-EXYJnxC_R95sqOP4VSztJh3SenkdZ1b0BhoBLeSwwaEyzly5H1N5zvGqKxtis9H2ZIf-bH44nFY0_ubADnGnBJbEcoQOmRgtQSNaztgJO9a0GYR-OSXlw7g7B4yPkz0y6EgPAo1q2AjxlE0JQiUuak8v4Pwd10BXxYYqigSr0y3mFcjvfi9-mv-pxEiY7vZzfCNcZEDXGn6VeVFNAZWhRhyOjVXOzTR3JmU-GfzYBr7CzzfDnNtod1YXVIwwYJfONtlmGEOIFgl5I29Tmiqkfh", "credit": "paul storing"}, {"name": "places/ChIJx11jxzgUzkwR1xHL9KR6CFE/photos/AWCwydj6SbTTqxXzK3rSenxFh2xGCIZlO0H8bAm8AzEGzJO6gEDbF0JuTtry3x5-pjP2T6RUJk-7iAVkhYdsEpKuQHAsYEvZ_oDhqCfw6tSDn-VJSErVw9Hr4-_8p5LXMWisiap_7SQeP7JUKG7j0_tM6NoWEc3mFZw1O_VHtDnXgJSBmjahjVcn5KGc0mW1fT9p4sgMPGSkNI7r99sW1mkCKpB-MfiQujEFB8mxStUQ0cxTKbR9aptt5GU-RwYaaSfOm_2FjAm26G8WFQIBrvBehqsbJbIUgAZX51UifXs3azwqgiMkJKUemB_bh461U0WLMoOO7vEauu_sl0Ph8Ffsk4cBCXMhHhrzdS64UkIUxC78YC_ft3dAXZJfhhaD1P1CMyHormAYqlwfACSSOCpHdRPbJM9-9qJ6GFw1X7mctcElFio", "credit": "Pêche Blanche Gatineau"}, {"name": "places/ChIJx11jxzgUzkwR1xHL9KR6CFE/photos/AWCwydhkPDF5Hn9sju8LrV8LVi3_Whq2oMePFhcWTSoL-xJRaccInRfNZbvGFZxDjWflAzV_vW16srywth34KIaPSgWh4LmO0o4Y4IX2cfbbiufRVhPg2xZLem--8YOjHmH8oiaxJPM0Sa-jegFBV4WTc-LEWTIlTkLx2-3abZ2ybUIbZnPqbwrCqf5lztCKT9gulpLuWUfKiIIHxrjzkkezB_HpLzE2enMQYsosjEMUndZWxxEahmXWMbgVejj5gVrQ8lLOmc7qjT-hNvIXSwV5M-8v8ZjIaez6oQChG1TXgB4O53ts5esdt4zLzKxwnykxHWH31q37vK12Ltv_JV58iaotWe-A6oF4aQyep_PvkHuyMj17q0ONWsSEvmcTWxHJ2InTnBM8yynHRLbVenT-xPTSsbpuB4SVvrsppNbd9EY", "credit": "Pêche Blanche Gatineau"}]}, {"id": "rv-canada-ottawa", "name": "RV Canada", "categories": ["rv-trailer"], "town": "Nepean (Ottawa)", "region": "outaouais", "lat": 45.35, "lng": -75.7, "blurb": "Ottawa RV dealership renting Class C motorhomes, Class B camper vans, and travel trailers across Eastern Ontario and Western Quebec.", "rents": ["Class C motorhomes", "Class B camper vans", "travel trailers"], "priceSignal": null, "phone": "613-226-8228", "website": "https://www.rvcanadaottawa.ca", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://www.rvcanadaottawa.ca/rentals/rv-rentals", "placeId": "ChIJTy1grNoHzkwRidiy1bnFDXU", "rating": 4.1, "reviewCount": 719, "photos": [{"name": "places/ChIJTy1grNoHzkwRidiy1bnFDXU/photos/AWCwydhacqwDIeYRZvHpqgYpowvO9lgUf5qufnKqKXvLgzZ3Z6h0kVvq3aDfGvm6iOYVAOKuqKzjStEMHE1F2bV5cyUjfSLHjWELxEdxF7eJiVmaU_gDeBJjdd65GAmR-OPRkl7cWjxveou0EDdmZTnWFyzCJOJPuEVrhHklcaPPV5HJh55s90CqHzZCeiQ-PeIaWDEp20H8_CDMClnJ8KDZnK-X13Q38j9-IJV09MaKy3jQO6W0iX_p6EHHyu8w5HlIZoiy30X5RNBOnJNzenpgV09v5YukOXZRhXQ4kXEKxA1y5OeNY-5U8wLleILwLsCLnC4-5ZEzwIwSrIm4t480OvlBdsm-x-mecZGdpJ084-GTi2E5SlqZ4jKe9zCKeJeEpkUNH4gS3m_NEMB3tY7dM-_ocsJU6b9Pxh6s2AXR2Amd9A", "credit": "RV Canada Ottawa"}, {"name": "places/ChIJTy1grNoHzkwRidiy1bnFDXU/photos/AWCwydg0PqG0eMjtvNX3FPQxYlIYptX750yHiQ2l55gMUTYAOqjlbFiRmBX6resmV04buiWbk641BuDpGavePNcQVOIUu_cVlEZlfKFBvqBDcsufNS30eyWUEWb4xz1Hsk6il_4cBFGuKvjD6_vLeVsqDw2aEQqhQljv755fOqgRaOqArz16EpQPaLL_R5215VKw8PcOzXSGRmcrF8K9tj4JZL9rExxYPU4xhYmB_IG3-VWyx9MJZd9kw4BM3tdSMNjdOJ213V3JIbjPfHTYUJSBv1TbfgmbL083N5eoIP7IUAf-KY4i03IPuoAZd7B1HhsVQgrl1g62av4i5EInHXJdhCSizbO5bklChYC7aQmebn5vaDUE4GXVzzqMGUV8MjHYsg0dW1gUkccNHoq4gAdrIu828MlBMVqO1lOSbfNcbtc", "credit": "RV Canada Ottawa"}, {"name": "places/ChIJTy1grNoHzkwRidiy1bnFDXU/photos/AWCwydi_hNpf4omL94j7P3naSj--OcK-6H8oWlQVW3tcqT8PVkWkSknBRnKQbUQ-sxjPykCJJew3TP4iWoU8g57nTjN9h0lz-DOh0BJN80Vp6HX3bBnFw4p1zVT5sPCHuF0RiV6kkUs8Ht1-W4L1YODfzOtfBHF9YRdxsvI_M3sSmwn-WlY-qDMilCmvQnoiDWNgkZ2bSwM4bVBdsnjIzGZxnkazwY1C2FeJixvN5XtQp-osITtb4KrTD_D2POtwl8cheGcUW8X6uwD7PhPqvr8uNslXZprCbC2TSqzdwSJ4wJbuVy-rze_dsByHW9W1XTSXEL50jKgNb6wPXzQCCTrB0oUmzW5Txs4sURiZwOuKBxUH79ty3gZTMnshhS_NOSywFWjmsqiVsg--0oXpyxUcZwpCVl8tDU_6lbK1ZS6PYJtDHA", "credit": "RV Canada Ottawa"}]}, {"id": "outdoor-adventure-rentals", "name": "Outdoor Adventure Rentals", "categories": ["atv", "utv", "snowmobile", "jet-ski", "boat"], "town": "Perth", "region": "ottawa-valley", "lat": 44.9, "lng": -76.25, "blurb": "Four-season powersport rental shop in Perth with ATVs, Can-Am side-by-sides, snowmobiles, Sea-Doos, and pontoon and fishing boats, with trail access from the lot.", "rents": ["ATVs", "Can-Am UTVs", "snowmobiles", "Sea-Doos", "pontoon boats", "fish and ski boats"], "priceSignal": null, "phone": "613-267-6371", "website": "https://outdoors-adventure.com", "bookingMode": "phone-only", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://outdoors-adventure.com/", "placeId": "ChIJHVmt6IZ60kwR0OS6zcRyqCM", "rating": 4.5, "reviewCount": 30, "photos": [{"name": "places/ChIJHVmt6IZ60kwR0OS6zcRyqCM/photos/AWCwydguKYf1b91_lmiupsjxDOZ__8KNEt4DO7PWb8FKz8Lpup_Ad65fNrRx42BqW2NzkKZw98UGrxB-VsC_JddrhPGXwpf_T7ygYKDtUsIHeOQimZsdv0TRFQTsYpNmADkrtiecYdXgbZR3QAGf2xA0_fjsURkUR2JN0kQD5jQgdel6KHUOBBrfsBUAHrghHUKYJR9Rxzn0SDupLzvarX0J08IrsgBQgcXQeQ1TNkqKNyjPHESdAmRdFGZwx2iqOmJ73xcgRGtFECA68zg6EDEimd2h9a2E5IcxNoGCQLie9-Iq9OdT_19FlS4NWK7LpxoDhHM7nUGqoLcY_mO7XM-MxBL5dsSfIT-oKh1DHG3xaoweFuNdNvcX76o3gF5XLc0i9GKlT5nG5fo7D0ZSjXU9K143lbYRMi96Rk9Uo3BrtIfB9Q", "credit": "Patrick Tidman"}, {"name": "places/ChIJHVmt6IZ60kwR0OS6zcRyqCM/photos/AWCwydjXk1Whe_kHCgCbCKaYsdFD4z7v0KCTbnICt8qKCDLyOUe-Hydw5X2WA_P_zA0mzVOrxn7OMBlffsPNEQSb37JcrwR_oY5R9YxNfmpdJlmbBcbf7dVWRdGwC7HtdAeAv9xlb8R1adlZYq4fj5YAwHiYHZTjcuCUvgouRRoHzUtgbEY_T3dG5AxNSC_98LQXxk2hAXe032gtXDF_ivvUjblMqqnL2pixyZOF0vEikDM3LYpAoNNG20jWYybRB2SeEcTw_ZGhprkOnZDlT9jSgOaklxWOSZgXFjk3s_jJs_5GfjH4wsMDl6fV4YfZzhvaI0Gmdz1zeMmrON14Pf5lLE0iVJzwezijPUCYD30BudjqP0FTl8RBG1VxVMeGsarvMUEW3RhGRIT2AFtAHS0mXg6GwpmAANVG5sDXFNvj_gU", "credit": "Outdoor Adventure Rentals"}, {"name": "places/ChIJHVmt6IZ60kwR0OS6zcRyqCM/photos/AWCwydhuMZFTXegoOEs-pYckhWKvY4laE5VZj0Vmnbu4zbCy-djSjSQAbsreQxmZalzAyZe4UfmocQlfttXOEUjJcR72pQT2ZKgvJBH6bgfCdVGMxgalmBB8vsY5sT_i7neS1gAGTgatfP_iG7gIwuOiDY_TtuuctnIWE6_3A5amFqyWbfiK3rSETXSzqGJLVCGwgv0w4umSd8yKeH1jFXJL9OBpEzrQCkGZArbRGWCOjxUPabPqdoM-4WT8Q0gyzhzHBikk76E-h-Ay3fsuari7QDRjhB_JvRUUKYbzxkGKR7ingKH47Ae_Yur05WwB7FdeSzG9VgpE6WaQwRBIk4lzH3MJWMfUtlIvM-iRnOrkw4dkI2QNKo2qvBa4xKNQeKcADGFUSOkC8BzVkik1naLlX8sH7NDy_x4eAOf1wLen7zcJ7Q", "credit": "Yvon Roy"}]}, {"id": "back-country-tours", "name": "Back Country Tours", "categories": ["snowmobile", "atv", "jet-ski"], "town": "Dwight", "region": "muskoka", "lat": 45.33, "lng": -79.02, "blurb": "Muskoka and Haliburton adventure store on OFSC trail 77 renting Ski-Doo snowmobiles, ATVs, and jet skis with guided tour options.", "rents": ["snowmobiles", "ATVs", "jet skis"], "priceSignal": "ATVs from $70/person", "phone": "705-457-7046", "website": "https://www.backcountrytours.ca", "bookingMode": "online", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://www.backcountrytours.ca/", "placeId": "ChIJdRXBzqKL1UwR4JnSXGUMjgQ", "rating": 4.5, "reviewCount": 72, "photos": [{"name": "places/ChIJdRXBzqKL1UwR4JnSXGUMjgQ/photos/AWCwydhGfXw9mlkr0RhrQLmd7IkkOPX1CS378tAFXhMB1t1rKhB-k89PCX7YBMEn2XCB_Vm1diMNb_JyKxl7aVi0kerXZLCblAw90AW3I4CXNt-2q0DOt95_9Q8FJle79pUMxIREXFRFvtheSqn0UYva1S0nBiltEDmjR_6YJHncJwC2mqEwz6PK0O8bKy6t1bxa56yNazIavRNGB1_KcpnkR0GdHMJsJLomPyVOangGYU8IL8Rby2mkfQrE2ubmHWUwi8s9htrY62PFoAaPC7lFo5bHAMMN7BXQmv6ylJkztzmnboHWJ9KBqbd7OAFykBWFUgySjaTxtDmPqlERc1e1anBVNJQveAoASM2rd8RAJZ1B8UD63-obJl70I0OdXLF5SuT3nSa5s3S2BLuRnsrwgTpBQWUXLkgf8qkJ6MksmqPJSQ", "credit": "Mayoo N"}, {"name": "places/ChIJdRXBzqKL1UwR4JnSXGUMjgQ/photos/AWCwydhQlOgelUdagJ5Q_cqGpX9abOI6tO_MAGz6jp-P6saEDp9Hd_gJAGpCEk5QG2PqyMGM_P6ZhQvnb6ftOuy432IvPVmGVGve6xJVFWZTVged30lPQ-wb7D9n8iM9cM9WI1sgOe29rb1d0ixhsTCekZ7oQPHJPXcK1vMMm1gxDaFdKlNsFducDWGqRyMvgMFa6clLPeeZPKufEiL49lGMZZ4egx1Z2f5lxc_GFns2ZXlNuwgu6P3HiCPqPPeHlsjuf0imK_gC-vxh2JEnUThDfz_SkJL7MymAXIYwxMkTvDv7opr8Q05katU3h4O4Dcd5FBwDduWheAF1k1VvYOfnwCRsMZzj3XgmNwmDXJZwy6naJa6QLEHQB_5CUsF8YYzmls4R0N-NX0J6FMAanazTkRqc77dQ-PQCcasjglGU6F58YiLK", "credit": "Brennan Bailey"}, {"name": "places/ChIJdRXBzqKL1UwR4JnSXGUMjgQ/photos/AWCwydgSue4-jLb7DL1xkgjNWwmLD2piCpIlhse_K4caaT9gdjnLPGaA4idjT9WObKkq6RWXiaqsWJJfm1t19GGD3tNYgCnNIUt71u2_0I_VaARlFDRDaelqTkIFNEoe-IPj1vs9bX7knnrIAwMNFXOi7eL2M0zAvcKRFoFUkLtuK7rpfqxtF4pJozCT8baYyK3MebIaT8pHa526rlhVm9nLyxk7avVlyhEwpBhENRvSx5rxvmN4wziNzv6igy_pjMe9NRnkC6eQ3S-sZw3ap_JgCQ6TBhBjvEN6APVY5J0_a-P9BsEZDLXDf3rZgSdmoiPqX1LMY3U49-Yqwip4naYMBxDC0QqXVDgIVpa1GcVORNxlpB816y2l4hmnWKzc-IXNKtoGRkQwZDtaAQMwZ7NIUmJuq_SV-Wie6GZK48_JI4UqDA", "credit": "Rick Chisholm"}]}, {"id": "buckeye-rentals", "name": "Buckeye Boat Rentals", "categories": ["boat", "jet-ski", "kayak-canoe"], "town": "Bobcaygeon", "region": "kawarthas", "lat": 44.54, "lng": -78.54, "blurb": "Long-running Bobcaygeon rental company with pontoon and fishing boats, jet skis, kayaks, canoes, and paddleboards on Pigeon Lake, with delivery around the Kawarthas.", "rents": ["pontoon boats", "fishing boats", "jet skis", "kayaks", "canoes", "paddleboards", "tubes and wakeboards"], "priceSignal": null, "phone": "705-738-9283", "website": "https://buckeyerentals.ca", "bookingMode": "phone-only", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://buckeyerentals.ca/", "placeId": "ChIJAYehgB_X1EwRRQTSHLApoEs", "rating": 4.7, "reviewCount": 116, "photos": [{"name": "places/ChIJAYehgB_X1EwRRQTSHLApoEs/photos/AWCwydhrrYRT1XThq7qVIBl_JBpjHeTZMBi6H8pxnBz2AvlyxMq9PtGLiyrh29mCrXpzHZ7aIQeyYFYFEiXxdtbWn-2CZKpIuznNKhMS8c8wp7Sz8g0keTTPZP6PpES_9UOYWHN-c_sy_WD7Ekta4Rreta01pA5F930yCAUtmvE98fEgMthi0eFQePT74EaGTKU_ajhtbCQ92H6WCgmK8Rl9qOomew5hhdB58E-TMi6GMMPDwt8qPjdsKXvDTM_O-NE-IymdNuqFSVt3-2JZXYmVTKFpM-bJOK-cOe75coVhLsH9f0CnM8S3KMaK_ggk53p9C7ZF2oJT5LxrA3gveNVbAQ2PSUrcMISqkYeagTBAuLm6q-iA_9GIHYNtmjGkyfPuz-TwNJ4i5JbLO5afXangmS-w3QS75pwyw-1SHrvm0-4F3mf0", "credit": "Buckeye Rentals"}, {"name": "places/ChIJAYehgB_X1EwRRQTSHLApoEs/photos/AWCwydjx8cL6w_K0mEjecpnd0s1MX2nNw93cY5k7liNt53QiC6AHN8RYX-PmLHFvJOJw98X3UeELIfSTuOJazkmIRTjIEzRZrM8cz8kbJJU7K8J4VNgWPfRS0f4CMXjwixvJ5Vlq3g7z5mqrHb0dCuvH9pntL3vu41LjGYrKQN58GqPHTvkPQclQUDfCwgJuSdwqPyNAVky78yjWTgFhXXRUZMONRfB2TCFx3unnEUF_6VrJ8T_6m-x_hWFqOruC4fCq4LfEWRRLw1Om7lIEe90ccBo685h7dgkcQjncXB4db24eUISNK6-vLsJKjXDCD8vurYNvcG2UpMN4jkQVEDXijCqkHxLxHNfMfivhmaXCf-mwFz_TjB4nGF4UsQBOeb1xK9gvQaVguCf2JGd3Ep7wE2OneoE5lEV3osqbR3vEtMW29rvZS6qtbvrzAd8DsVsJ", "credit": "David Sale"}, {"name": "places/ChIJAYehgB_X1EwRRQTSHLApoEs/photos/AWCwydhIpu_FSepqur7yMGA42w4qdC59u1mVB7P-U6iMnVyd9Q8FltDujAb4uuHNzszq7uVLoHIacRW3q3Z0bqV3FyFLe-4nHaqL2wTODcZm0CqIU29Kxgie1D1tKVgzor3X4yIkUZqxoPVXGbupt7ef5Wnswras0Pb2kYTYZqhL231OpZNSGeMbE09nNRCuc5zHGfIHtIjmKgcRUrzUEW7rVSHR7WSLROehOBlKF9-6SpBajQKunq8G7asrO68yPxsFRBCZT_s_a7ZSFQN02YG0tzS4XeXxrOO9S-g7LTPEmwp-gzErLVhoh70rgsaiSsprn-WgXfvaI9W74q42nTp4Y8hwkSWh_scnM4gcmt3WAdHtN6a0mbzTNbUSlV79EZgouQcKCWtVB7VW0JO3xMzz9Bw7JmBmTnZbF5qrmiY1nEqaTg9m6_tIYE1iKvFJMg", "credit": "David Sale"}]}, {"id": "shoreline-boat-jet-ski-rentals", "name": "Shoreline Boat & Jet Ski Rentals", "categories": ["jet-ski", "boat"], "town": "Grand Bend", "region": "lake-huron", "lat": 43.31, "lng": -81.76, "blurb": "Grand Bend operator renting current-model Yamaha VX Cruiser jet skis and private boats for up to 11 passengers on Lake Huron.", "rents": ["Yamaha jet skis", "powerboats", "tubing and wakeboard packages"], "priceSignal": "from $130/hr (jet ski)", "phone": "519-694-8206", "website": "https://www.shorelineboatrentals.ca", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://www.shorelineboatrentals.ca/", "placeId": "ChIJzbtRPtQ7L4gRr33lWbNc15I", "rating": 4.8, "reviewCount": 658, "photos": [{"name": "places/ChIJzbtRPtQ7L4gRr33lWbNc15I/photos/AWCwydifzuUWN8HMapM_NY2Np6xQ2jyf8okS7n7o8IS9to5pX8Ld6gHPDHKQgi5vLBCPpAdlp7tXEnDWExpVq-RV3QLNETzr7OkRHfpUhhqKLdo7T0kN710wQiBVw3BVFdySfp1F_VB7lG9pbA3w1c6bskqU-9QOvpteA02qX-w5yjjWUlSEs-iHoDtHDhkc8Znj77dm98Z7aJqKLz8NyFv9kdeywbCpSkJwXlk30gZbFjsMcjhlCRaBYW4QSBQraLzWKvoKl1c9b8ozQTAWrV1wPJnNxQnZsCtcC-r2R-SAwYKp_eDx2Hac6iwu7cFpOXfNx-ZrY5fUXqMFyIDCQ0k_EWw7b6i34w4qonsIY2tUPTXy924CfTiuJ4vdyP47IHOWC1vMuZBedVXFZTdHIt5tSWYDxEpIsL6aJdUYlmg26i7G3bn69El6RWgE_nyu1XKi", "credit": "Shoreline Boat & Jet Ski Rentals Grand Bend"}, {"name": "places/ChIJzbtRPtQ7L4gRr33lWbNc15I/photos/AWCwydijkFUVMAbnaNXQHKcSRssEQvGoStB_2Il6DMrTCY2zTMTUN4gNqrW5HPnOLafMj2BAtTpwSS-UpjvfUOuYIVSJvtP7AvoNFZ2GyVDW0BU5EHMSJjRwfXwCMFS63AGFh6XQ1RCGXpt2_o_y4Fp0vVgoVquqItDT5KvzfpDkDaUUZVRduVg3T2RpC49Gt27KWmhPVDx0Qjih_Rk14uByWUyl4MwbuWoJgMDRbPd2DxZavAAA2OVRBUtV_1agmmYOQangeV_hifwITgBHoFYQxncGtgWVTaU2oQfGcQaaKre0EV1A_zGJe_rj8VKjcEFZa7gDgS1ogA6kn5-aFiDQN_aHNXkzqZkQ2BkvXpsYNPRI7UX9cEd5tXSeVQcvnphhREOZCRakWdqseMTtouWvpjTLSHwG-SSBXQheOtJglA_YEEzb3RMNYEPTlMUgYy5x", "credit": "Shoreline Boat & Jet Ski Rentals Grand Bend"}, {"name": "places/ChIJzbtRPtQ7L4gRr33lWbNc15I/photos/AWCwydhwIXiX526XAc8HfRwoBF90ly6-KtTSo-X5d72Ra0GLJilQZYpAGnQXCxtadfoYt_a51RuIfBPUILHhOjoYm1fMNZZRu45Ph375i4Y1PzFZSl6KKkbRb4_HcsR1NSgspQhnOs1ypdJx5EyAZ6L0mhKYGk1ZfPnJp8w8m0Z0BOA4gFdGV15nhkb5ZuEdoajFyAiER0XBShniEreHz72jf9dR7dyuA8C6CKErZp83VXh1GhV-Jxz5laebefw23UtJkD9Wg2NunK5cuWIM0mdjkGOyTgAF8eE5NbR4Cpq4_jm4WJe1xoqkk6MhnR93sCiV463rAodvz7-TMLeZBFr0pB1aAn4rkHGRwwYcHcI1qoRtKAo6zwycckgaT0MlqqgvR-bDC7VAeOVlaTSmniSzL-but7GWYPm48fFOkh0-VzzeQalJMbb3ntdO4b9vF7_W", "credit": "Shoreline Boat & Jet Ski Rentals Grand Bend"}]}, {"id": "613-sea-doo-rentals", "name": "613 Sea-Doo Rentals", "categories": ["jet-ski"], "town": "Ottawa", "region": "outaouais", "lat": 45.42, "lng": -75.7, "blurb": "Family-run Ottawa business renting new Sea-Doo GTX PRO watercraft and paddleboards by the day, weekend, or week.", "rents": ["Sea-Doo personal watercraft", "paddleboards"], "priceSignal": null, "phone": null, "website": "https://ottawaseadoorentals.ca", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://ottawaseadoorentals.ca/", "placeId": "ChIJw1cIkNz9zUwRRtR77haMVlw", "rating": 5, "reviewCount": 49, "photos": [{"name": "places/ChIJw1cIkNz9zUwRRtR77haMVlw/photos/AWCwydg31Kz6y9KBfgA2OtjalHsvkAW5DA1qq_Krxq_d2eO2Mga1YulRcTlnLpAPa_JA54Dei4N1_JykEn0K2Cv6gzFUPicQ8Gz4oO1HAjH5zKJrVVcXo0-0SgYAFB54z0AMzKd6K1MA0fN1n15lgiYZiNykqmQvNq4Cge3q8GwHvgwR-XlwQvatV1rR3QioEnPN6cHWbZAswFr2LgJmIC0of23jeD6RQ8Ui3sjjqHmCBcy1TlaHwmo6ie480xj2jQGCfn1rqvikg6SUCNELIom8y4vvGElE8OaDbzmHUUxcSnSxk-irzMLVZ2dFXtR2iqsi5BtD1rBuc4x2rlQwsItQtL5OlZKX6Sfk6ZwpcbYAvsPR7IKLht61CKtSe-DT6XQL_rJoLxCi2smgrg_xX31haRnj8MqrIL-AHEVJBwxTiF3mow", "credit": "Scott Phelan"}, {"name": "places/ChIJw1cIkNz9zUwRRtR77haMVlw/photos/AWCwydgn_aqkrUOSAwNox6pawawRGJBuoLb4d6E-tUColi_ryUw1wiphMs6WxIuqFX44TgGB0UTYWdJn4DOulF91xsAFz4ZrFwqnyVJus6yQLSqItqjf0T11wIGBHE2kBUkKHiO27dl3RXtYJQTyyHWILQ5V6ve5lmX3n0B5H0OdvhKpbyV2pKiYpGV9LrHN01tPkj1SkNXuakRzBS86zzCRYuLlZLrfDIGciNzWoRKbkiRIEmkQgXZX7fyyBSyWTwYj-dmAMqVrGIaIyozXct6O345zEEriT1RMGS2An4O4nqv45Ba-RB87ghTwwNLDg-DVhEfF7j_RNX8gIGv4Smj_BjWS0JHJcjsil7HLXwc5B3nsqacEs7-wNSbFK-eiiboYlvGzLkce-lJWamC0AZtMp37CfSWR0WdYYPOPdaJgzV1-sKBIuRz4gwYpKhFwTg", "credit": "CFC"}, {"name": "places/ChIJw1cIkNz9zUwRRtR77haMVlw/photos/AWCwydjrC0-n27e5F9BHgIdCxg4BHL2uk7DxbJ-ML9YrekmkA0TmfaCUtydo4KHJApbGcyg3af0p8BD7lf-Rl4mede4eiWcuicAPuqVa9VVJ-zVlnSdeRvBrG9CcdFvgLlOJfUw_54bJ9fm0Jgx3FdjrM9N4IYNWShRZkp7xWGLk_IpBPHhsz_UoyU2uGhB888fG_jqyli1rRcPbPvquQ7lCsNSck3oPRDOvzceo8wCCwzWn-EgHCb6lm8B1gewPtihzEBLH9-nCKOjXmjUPjA9B1Kz9WKekqxoKCjdzpsZOeOCxrkFCRPApMBeOK_ne0fShNJQJ5SjVJr4o0dwnm_mPtqfn8Y_3fZEHffDnmVr4aqQc7hWMeEXazVasJCpONSoVQ2ki7Rwm8-S4IYVYbunMyhnUM_BGYoisOW3_Ky9VQ_aojAPi", "credit": "Abdallah Kandar"}], "added": "2026-08-19"}, {"id": "long-island-marina", "name": "Long Island Marina", "categories": ["boat", "jet-ski", "kayak-canoe"], "town": "Kars", "region": "outaouais", "lat": 45.11, "lng": -75.63, "blurb": "Rideau River marina south of Ottawa renting Sea-Doos, pontoon boats, and paddleboards alongside its boat sales business.", "rents": ["Sea-Doos", "pontoon boats", "paddleboards"], "priceSignal": null, "phone": "613-489-2747", "website": "https://www.longislandmarina.ca", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://www.longislandmarina.ca/", "placeId": "ChIJhe6eCjDmzUwRZmbsvIpvGiI", "rating": 4.7, "reviewCount": 125, "photos": [{"name": "places/ChIJhe6eCjDmzUwRZmbsvIpvGiI/photos/AWCwydhbQ9hzceO9B3z2RLvznXysd0UdE_WRWMWnIffGgwJto78ZU_xFAFRISEyAVbArJ4wNjYTQ_0YoDbrsu78YO7YqR_IH4vhuCXwkyhlad5ccTjArsdZYwpu31GN3K1-k7ApfQPxzPylJraGR0dbjI6IkPzj7jx7QoEPJStpP-kIelihbQ4xcrEVjNz6BWpoSGFycAXlbfZEAkPrEeJc_xcGfEIlfi-dZQmNrMrF9ReMXHBiZK2tDwAOw2aLahH7_N5x4tHGSmK9RN-3F7rrTcBeK5qmHL6ZZyCTDXB0u387pVDoGvOemIspFpXwx8jrGinbqgO8JxA9YqUjTzjo628jK3PtWWTHBjyl11GjMN9AgMXdmKcRNPB99U7CX4-M6oidQoLyMsJgUe2ShNTmCSLm9BcgO9k2qOOIanEGkkCw", "credit": "Photos are copyrighted by their owners"}, {"name": "places/ChIJhe6eCjDmzUwRZmbsvIpvGiI/photos/AWCwydjwn15rFQW1K2gE1EoRsCdW8gPrrCaHpOySk4ujtYvwwz56mLI9q1DllEZpFl1eiR2Egz1gCghV4SdsNJlfW2MjM6N0ZiFk3Dyt1FmwbDPqAZNnLAVoeUiV0V9Mc4Xlfdvd5Td_929xtNx-KLiaNmj8u_hsgVKEYnhu98ktj2Xvh5umuKKeMou_xnL_URyQs0Ki5l5_GmD5Q8Oh4GQbzptM53PgpygxSseylxc9p9b8LSEWjNUaDO4lEHCJf6a2ROzVcl4eOyoAO6g-tZU7QYfIsC_cJZhtp4cRGSmypmKYGEi_7vCmkEl6UjqoKkCKQyyTQAh-efF0Tmuiuh7IFQ74NllW_0-WAV75oFfF65Qkc3QHMJ6uTJCypQK_6LRKmUfJEdwqUYNG4d_xQAdpQCm7o__-GCwfqYpfeCqHLpUAtsfC", "credit": "Photos are copyrighted by their owners"}, {"name": "places/ChIJhe6eCjDmzUwRZmbsvIpvGiI/photos/AWCwydju3KxH7hxPliUDuUd-E0uK0RQ6kB5eXcmSC-xuo2bPg9djpAid2j3fvg31xheRGn3xxoJSSLZeSzZ7LZEHz4RHHP3LglCJUnrj-mg5tVRmvElXUyDOKK-50rLHjGg8cyBug4b812n-objtb-Z5jIZfJBmGsPSgkBIE_6CWMu9Afz_OhDYGjSvLDA0FXZB33Z3SumPPINYUPSj9asP6zjYq8SpNATpvSeI62Ucd9WTa_9QAkc0BNaa4vtcaXT14ZPwzWcsrnpBmZxvT-6L57_X4ePScG5_OJm93JXuOHwK2R1-uHNMwguo5CcanYZzv2COenEbkEdV2UlbI24SDu_g1RoTmuaFB87RyPpYRiCByugdH_yaIMGVUVpZHHcABiTV3g8lyok7fi3OLfjZQ2LC0_m4-3v7XKuTlwaN7U3O9YA", "credit": "Photos are copyrighted by their owners"}], "added": "2026-08-19"}, {"id": "pedego-ottawa", "name": "Pedego Electric Bikes Ottawa", "categories": ["ebike"], "town": "Ottawa", "region": "outaouais", "lat": 45.42, "lng": -75.7, "blurb": "Ottawa branch of the Pedego electric bike brand offering e-bike rentals alongside sales and service.", "rents": ["electric bikes"], "priceSignal": null, "phone": "1-888-777-2066", "website": "https://pedegoelectricbikes.ca/electric-bikes-ottawa/", "bookingMode": "unknown", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://pedegoelectricbikes.ca/electric-bikes-ottawa/", "placeId": "ChIJB7D3MwgFzkwRigXMsDzx6dY", "rating": 5, "reviewCount": 20, "photos": [{"name": "places/ChIJB7D3MwgFzkwRigXMsDzx6dY/photos/AWCwydg-wCNWVFWNlgSCo06kU-vB58GeEwtFOwoaMX0oFl4UiaNsaecF54rIzg4QHdOxWk-c9pP_yQNHTiUYHqAZbVbw0U5bWn-GpR0BucrrPKEm0EeRE_LmLfJOibDZrOEkA-oX6cEEz-DT85yfKhjLMV8Dm2wIkiQeSuQYeY7JGSzuOpESNf717v-ANOsY2M3GArKTarm-5Nff_rA2R05aYjEAQn5K0fm_MWEDN6ipCKHVvECzNUSW-L1vl4g5M_44EkrbvFct7Y6351fByqqUYuq04zQGn3qdXnu11Uc2u3l2nEVekt2hFmjfMXPuvitmule8cD92WOj-3g4RbZIiHfWPEqxzLmhWyDnU9gF5PWi0B3oXgm-eNnWKkDVJlPacKALvgobKycYzseNXE12nlXFgOdbfdxNOsOg_r7kzkEg", "credit": "Pedego Electric Bikes"}, {"name": "places/ChIJB7D3MwgFzkwRigXMsDzx6dY/photos/AWCwyditmPJikRdfCIe65cYkfbM7lRNE3UWKJIuV2kdKbPE_7G_G2GOh18_uOfQZPg5URTkgE6zLHqsKHW-lyMLe-bdQbQDHgcjbdKFuCJhYyavHcwjCJ_Hj0DgIp0ZMkF4dMiBE_E_PgB9aMXG5EGPNi71xWhpAhgCE4BXYDm97tPheIxBQk8L8oOiEc8H91UonMnNoXtb3bGAitUdxHo2SjFEijn45-AThy2PE8N1YYZYHO0_pHeFl2mWyjLvf84BY8Gbg08i2tka_yJjGECGNcUnEI3ekeRT0jEB3FJqhn87ijV5La-4FIuOttsjjKUHJk5R6BSvIbv3CJyUgihJxfBDS6G747n52zFYGEjdiZj4fRnAJ3-DyHxWIlUDxXPTTVyED1STaXDnZ51bxTMrvKpkdXRNYk8Incd7SOvwBr7gnKcHl", "credit": "Pedego Electric Bikes"}, {"name": "places/ChIJB7D3MwgFzkwRigXMsDzx6dY/photos/AWCwydgMLrCRaamvcCHHNbV3pASEVy7ZkUN9PlyUwEYcmtnYJfXR-ShCPjRq9zdhK0tTaPG2I4-mtDx5DQiotq8Ah3s-YMeJvuXdvdfFiRF_JSjxUV54Icfryu_DU9linJZZHePfgvLEfJlTmIFsxs3SjkohtySJkuU5uqbyOXxJdbSerF5xEIpdk0HuUjAaK7HSEbJ-_SZ_N3a62kt5XaqqMVb-nCWLsrL5z1kYwl9eONhrJXEv5_NSZY9QYyuPLJ9bmtioHZAaSdYWo8un7XyukhvqwYfugAs8Sd1mvEJzUrUB10t71zPiGj-jVvK7mfppIlZspBat8IbIvC3V2MT1VEDAznjAI36VEJbub2hqsPP43vECqSchGFpziluXPsaUnPCdA-faRibgi29Fe-S7vv-_hDOuBHc94321LzYVcLpiUyY", "credit": "Pedego Electric Bikes"}], "added": "2026-08-19"}, {"id": "lets-go-cargo", "name": "Let's Go Cargo", "categories": ["ebike"], "town": "Ottawa", "region": "outaouais", "lat": 45.42, "lng": -75.7, "blurb": "Ottawa rental shop specializing in electric cargo bikes, e-bikes, Dutch pedal bikes, and adult trikes.", "rents": ["e-cargo bikes", "e-bikes", "pedal bikes", "adult trikes"], "priceSignal": "from $29/4hr (pedal bikes)", "phone": "343-600-2453", "website": "https://www.letsgocargo.ca", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://www.letsgocargo.ca/", "placeId": "ChIJfd0K-AjhNg0R4GNDZXYUXsg", "rating": 5, "reviewCount": 26, "photos": [{"name": "places/ChIJfd0K-AjhNg0R4GNDZXYUXsg/photos/AWCwydjffb2BsCaOs2hxkY3YgIcahZ2SNwe1mc7fOYSeTkSA51r0t262O_d799w-w7YdnN7bITNRg_oxYOBuuU2pxMQBrLIJlxWUAjByB67P4X90ifuSjb1aGlt50O5YhwvH08DDw_CEGssxCj3_LSKX74vwpinVp_G1a0d5lYmHRMRvjTZRaJ4LtKl4DKDXopfqO8K04PWxTkpjPU_i_6l_Pgmdk1x5p6Pws9Coxv8RxlqVjzdad9_U4Fv1pkHoe9UDzN2c6unvZBzHZtTDp6EYvAdG2NjzNUA4sxu227XJ3HxNLSWw_jtx78HUMMn_AK9okhcIOmVnpP-MEwjPTRcXb-1ZmS63gRCtANeGIrydoDX_ajaLYAc8S_nvIx2yKyAOqSfF1c4D3KGd2fGvQ6Y9AgNeHtXVGoQU05BtaWl46mBarJ5ZFUmVRIsq7LfAKRmF", "credit": "Let's Go Cargo!"}, {"name": "places/ChIJfd0K-AjhNg0R4GNDZXYUXsg/photos/AWCwydgZfkROcDQtNE8LnEagL8OXNY7I7XszzYqQboCbr0KxZm6PO729brQJS2v_I9uVT3mE14jMjZYc4I2OxiHUpwdP9q9iLqdCK2DT8uQIXg_HdTdAQ5o0m3d3WxXJ0CBMowVKUiIwET2GGrfMihI-E25up-nnOSdYo8qyJEdB0RDyD3o0st6Wc2T78uJFuelYAULY8Ms-RCOCnsNcH0AfzuE5NC30KhLv-2HzEZO030uUZcnAXBo-KwFEFEsJgNrJV3E83WZPQMDSY8wYvbY67fNaPaZnVw9L4btxr5fuJDsFY8qWiD5vn7-zmUTyFeS2TFY1mTXM1GvnKEbHCOrQ0XIcPRe5hcTxi4o63I01YTxQ8UKUNrvRyRL48nNX8_SHpxfmGbX3YWH7YBiZhBV3KSaeurGgiQvuhqwJ1p1zoVapjLgYtcYHjP4WzcNkrLqL", "credit": "Let's Go Cargo!"}, {"name": "places/ChIJfd0K-AjhNg0R4GNDZXYUXsg/photos/AWCwydheai0gJCLRJD9C7GKeLlezHIJ2g3MV-lrs8OBL8qa6OWJi1sY-EslOhU0wxOIbmBhOUHWuvozxU5v3aLdt20fzy_gjT30iO_dnlYJx4tTWUy95SIrYA_gG3ALEEbAirpFz2GSyrnFHPX4qL6fmQxdPZPwz_00XzHrqOtQ99fy1ehauflNA1npqhtC4XWLWe8pXDqVFh4YKgEAzJ49g0m1jRQzqRe0mQm-w2AMoIeIJuXCyzAjDSgu7VsOxaRb_8-tUfcpSGjhCuBfkGZxeDDEfUx698aUA4ngXf1reZBp6sJLnEuW82HikDJv5grqti-P4KHi-lF4EEiZLnzC-I48tNEJnNUtMw2DNL-HiqJZOtlwLCXTquVmznXTAtUO4JwUJitHwgjQsHzb6ZWnZRHHi6rtoyBpu7w79VCZfn0G62R8Ws9r7DpyFWVw-2IOb", "credit": "Let's Go Cargo!"}], "added": "2026-08-19"}, {"id": "muskoka-boat-rentals", "name": "Muskoka Boat Rentals", "categories": ["boat", "jet-ski"], "town": "Gravenhurst", "region": "muskoka", "lat": 44.92, "lng": -79.37, "blurb": "Large Gravenhurst rental fleet of Sea-Doos, pontoons, tri-toons, bow riders, and wake surf boats serving the big Muskoka lakes.", "rents": ["Sea-Doos", "pontoon boats", "tri-toons", "bow riders", "ski/wake surf boats"], "priceSignal": null, "phone": "705-687-1400", "website": "https://muskokaboatrentals.com", "bookingMode": "online", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://muskokaboatrentals.com/", "placeId": "ChIJD-U4OPWaKk0RHhLWFTvDhYU", "rating": 4.7, "reviewCount": 1158, "photos": [{"name": "places/ChIJD-U4OPWaKk0RHhLWFTvDhYU/photos/AWCwydg4ITHWif9_FTnmQivyYlRItwrs7VyAwfKgewsnWc6fDEsgHadewpxfEhZj8RwaOBYE5t9mqSz5xqdZa8P30jsOjKiVgTT748j0aV3YkI1VznbLc-nqmy19--t1M8h06JV4Er5wdEoNltPy70zoRK3vyrnxLh_lVkFgfoS4wXZxX14LaTZi2n5A7Bv3kAZzMHh6b46vVpb8IS9ru4J-RhYaDqER6rTwfnc1q-OGggvCSLm6RjErfvmvh_XRyEhhcSMwkx6q0brVWMA1eYb2GGcaoAsmiqmH1w0yHiHweo5824oDR8KIrkh0QPidPHFdroMUs23NqHjnM9aMHu7W7b7E2RnND7KmIvUNrwwNhGj4h1r3G-URlHxuLXRou-S-qjeIbOHwD_QbWhDe2aMyVIV4ZtOOh0Fe2CENx-pbIElno-s", "credit": "Pontoon Boat Rentals Muskoka Gravenhurst"}, {"name": "places/ChIJD-U4OPWaKk0RHhLWFTvDhYU/photos/AWCwydio-k1CZ5Hbyodd8M7PkBN54jveDhgwEJrEN6R5gL5X8gpCmXj3cLQe9dZi0COQgvLwwpdqtWDI8sS_CdnObcuDg5T8XxCOJ3IVC_CBWarbtQSu0njkmtxthoEWRtZnYlowCXRheSZ2JZSKUn-RHZJEh69omX2n1YKJ47una9fnDS4lhPC9nDUhYzfXINoYolszeXd4KFC2M4r-7ecNyuElzsKIGE2DNq4O09-VRj53axqjNm4zs-D8V09_W0AA89s_Iv-S1WoS2tz_vno5DHGflRlqKQTiT4cvPxakkPkf1ClmnualRxJr4QwVXowY0J-ASOWDkekVYWQU81AyMnfayTHo88vf2Iagy5bhUnjmD5Qkwa8r8aNdwbtqQmoQeZjVuGSeihW6ktoTzbiy44ISs-2xyxbi2F9bPBhZ8uYkQXGUrikRM_FYUsGYQJWO", "credit": "Nicole Spencer"}, {"name": "places/ChIJD-U4OPWaKk0RHhLWFTvDhYU/photos/AWCwydi_BXmQNn8OBRXyKMfwrpNohuVZf0vhGUmmGpMSM6tGt9IwAA4pR2z_ag8_k7BT8V5GaaQs7eh0TYB4cgmAR5CWHqY7bH-Al7e1WtsN3XwNBxRdYNMSt6ChyWdBLG8F4yWr0dN_CRtlswIHnBgwlIbuQ-_eSTnHe4nmZbBLfE0npI1kFZx4bkupP1mbrCKQuYWDVmbUNUb8PquH-Gw57HqsWjuznde8e5W9mysliWCKC6WNgLGwIVp1anm89aBlD-sAlxtNbyTZXOn2-c1Nm9sWjmnn61gWMn9td_W19iNhApoWYVIWNSmViedLiWWTcILAuDQQw1APsQYbDqBpdf-q8gPqiyd8wqt8513O2RJPXGX6F3RBKLJx0kcvUcOQNosFI_7eRaG3peoQu6wNAo1VFd0JgiEgESyos1X6Duu3hLJiEKyRnrhGe_pq7BXs", "credit": "yiwen jiang"}], "added": "2026-08-19"}, {"id": "northern-lakes-marine", "name": "Northern Lakes Marine", "categories": ["boat", "jet-ski"], "town": "Bracebridge", "region": "muskoka", "lat": 45.04, "lng": -79.31, "blurb": "Bracebridge-based rental service with bowriders, jet boats, luxury pontoons, and Sea-Doos, delivered free around Bracebridge and nearby lakes.", "rents": ["bowriders", "jet boats", "pontoon boats", "Sea-Doos", "water toys"], "priceSignal": null, "phone": "705-706-7096", "website": "https://northernlakesmarine.com", "bookingMode": "online", "siteQuality": "modern", "verified": "2026-08-15", "source": "https://northernlakesmarine.com/", "placeId": "ChIJaeoy0EebKk0Ruy7MyJ5X9Js", "rating": 4.5, "reviewCount": 87, "photos": [{"name": "places/ChIJaeoy0EebKk0Ruy7MyJ5X9Js/photos/AWCwydiiiGCb5SmMSvjWRZ3QDL3HbSYB3fTei_NwxG69hUz3bkAdWvc3xThj3QpNql69lluwn5f-tXqZgodXmc8QtsN4c6MneRsDpHrmXGQqrtFB0fhJysfBkvNPsKPMl5agUcBWxDhpckoWuyc-yfcBiFchtmlvMn6NmdNWlOJo7367XUM0fswx2hPqDRsMyqR5je4j97CyX6cJ5zDa72XV0aGZCVULN71iq4XEqiALkbYoNKIeaccoCLVIBMcTaWuUb4mH7g6YUxintiZSjAhL7Qy1Q63fj_jCLnHpYeqyS217kfDmGl36lMWrcHtVAc-n6Cy8HnETh1iX5yp_7qooCWeVxLOSpm8YEoqqwMTQuXPl2nWYwz0WTrTAwtWWGOn1cCbPOdJxhYOAAsCdfZ_2PKEhL2qWbkFvH-xp5iEgBQGePQ", "credit": "Northern Lakes Marine | Muskoka Boat Rentals, Muskoka Sea Doo Rentals, Barge Rentals on Lake Muskoka, Lake Joseph & Rosseau"}, {"name": "places/ChIJaeoy0EebKk0Ruy7MyJ5X9Js/photos/AWCwydi65N-3POlbcFhqsa2j2AA_u408jXnGgokeAKcFzFSdbCf-L28uyOk2K0prZktGUbl6XbRP8j9J-x-spTvtG1Ekrql4vDaQ8wxzc7XYBupb5nePKM_zxwDPx-InNYCK5vogP2mdx1Z7fhZvJAHgF_Qjwu6vxn31_LLZMDGo6IO4R7_bkgu7mMZERWa08iV8k-KJdyd4Lb3Kk4y6x4g6J1RjEoRuCYVyLQM3kV1s2EpWp59Gzl5MuW5RQ8FlmrM8vd303offlGqDoY4GktHtMKwP9Txzdoqspu26cjKpRggKhheYURh8_qIjU_VOX1etQTU-11LEGCqK_qMrCxxtAusGP7A8EiZoNwI8NxHiTLlBTw9eRADrbqVgeBuuBBY37Z-NJrFA0uiVUyv4QSHCeCGxIeVpewIyhIhairh2ukj2MtlJGxmLs96FcfxCZMhG", "credit": "Michel Cote"}, {"name": "places/ChIJaeoy0EebKk0Ruy7MyJ5X9Js/photos/AWCwydgctMui6_OC7Q1t3l17MxtQOnbuLfG1nUX2Uxf5DBGUNkRfbwTVyzNqWfypRs-_V9ugi-gNyE-QXY0h2J9wFKxpgbrSffuJGi92JZKYZpMtKn5o8qIaaOuENY_aNnjD2ql_m9RL545CQRI0iiNnjuygL_0CAhWByoZPcmFnmxh5KXZ5iTauaeaXnnFedQPoL69TztYxKhjrdpKcw9w6W3CplRUh8L3vV8ww7cLnwfETT1GLUgcqncGhOpn-KoReABx31DOQHMum0LhGsebmPs5vUezjeq8mqzeHhGOdEMKCAjxWV6BC5Vh-UMbyy_UXVjNnMukX1nY4WjMPsNk-3db8UN-l8DQXmWn0X9arUl-RcVaOPqrZeiNhCt8gNKYz4c6uj0Stxo9p67rhP6U0jJZ3H4hFJMnqykPc7L-JclYjsVY", "credit": "Northern Lakes Marine | Muskoka Boat Rentals, Muskoka Sea Doo Rentals, Barge Rentals on Lake Muskoka, Lake Joseph & Rosseau"}], "added": "2026-08-19"}, {"id": "boat-rentals-canada", "name": "Boat Rentals Canada", "categories": ["boat", "jet-ski"], "town": "Gravenhurst", "region": "muskoka", "lat": 44.92, "lng": -79.37, "blurb": "Muskoka rental company delivering Bennington and Southbay pontoons, bowriders, Sea-Doos, and watersports gear across the region.", "rents": ["pontoon boats", "bowriders", "Sea-Doos", "water skis and tubes"], "priceSignal": "water toys from $35/day", "phone": "705-687-1400", "website": "https://boatrentalscanada.com", "bookingMode": "online", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://boatrentalscanada.com/boat-rentals-muskoka/", "placeId": "ChIJD4rB-p6bKk0RCT-pGyiMEPk", "rating": 4.5, "reviewCount": 148, "photos": [{"name": "places/ChIJD4rB-p6bKk0RCT-pGyiMEPk/photos/AWCwydgQhYGg0f8dWfN7W6aAiZ4y67VEc7yY6r1tk3KWmArppmMm4dI5rBm9HYfi30teCusWt9_Ps1wFmV35C-WZx2kX7oNFiL0GxW6Sy84XOxiC9RDtootAOpMzPx10XeGU7ZNY2XtawEAExlxhKHomMCnCEblMM8z2CxcghWoocAo9jp0A2dDlYje7ujdxz39rcF5tsMO5Lo1Ft_rv0V8snIEEEflQMmlObqxiMNwuJUhmBZNtt6Gkyphovw69tya5BRP7OmMYDDgnQ_spKL6kgfNSBy_Fwd1lgN79PAPNcflMO58IQ5SIP4cMTz_Gx4FDGy-Q8oL-ffpx4ZmwEhDlkU-JVwAI4WlcMgA9wWryg6t-vxNF2FZKw1InwC-yBztFUEzmo0iSZJEIrgvK6KXj5UnIUahLrbomfP5ShKC3YlF0fbwZdRMi284tF1aeGzN4", "credit": "Yasar Ali"}, {"name": "places/ChIJD4rB-p6bKk0RCT-pGyiMEPk/photos/AWCwydhxUcW5NOwbegUm6N8Qfxk5q8EfXqaIlc1UuR738nfMIDWv8BdYTetnN030EjVHDqyz1nkACk0Buma2rjYAopxRAeYZLAxjiZy9L6kQaqPCToEVdTRL2_loZWmQkYBRWzs9i2lJb--JG670R8O-R4-JxxhrDpoE_7E2azIk1USt3G1HR0L3fiDgpiw28zvyQPXZRBPikH75vcOSHg7iEkuPK-my0KTlI4sP-CIZGR9cDcddyTaFuIhKPHYG63nH0BYWrSpFfqgvvO5CRT8zqqSIBRTGQmCV61Qw_Wc_6rflbQ7cmOHU3538Gt-sNbAaPWdSpS8pnBDacVst0usVklzTgWjf9TNHr4JTgQwheZ-GhJVqUrDH73eA2oRNIn9V514k2s2Y1Z6KsDcvWqxaiRYequCjsnU_qcozO3jBm4tnZbZcsmKfX_2QjljyfcUY", "credit": "Nausheen Fatima"}, {"name": "places/ChIJD4rB-p6bKk0RCT-pGyiMEPk/photos/AWCwydhR5ZIFrgQGwK1EdjZxnwqmyKev9nxdl68obMtRmcHkxMP1w-Q4hqQMe6Gev4bUUlPYs0dibTDdSka8zoMdPZZhUdnFaoO3JgjIvFCKBGq5-J9AX8vhjukD2KKb7fnI8-Sfc_VndEg8qa1snip1sRP4RbkarZNqyfLOqaigryVsfQoc3XCZkQlcf1V04tbRthL_ibnI21Hd9XP-97CBUazjAQfv9ya5d8POCBktjVaMZrVa7JrAD34pXUILI7XujCxEqK2EU7mjwTt4o2oqM9gjF9Axe3LF-6uU3GT9P7MruMlXgje9y5uDeBO6hN8Q8MfCik5xbY2gAxm9xpHnV1P3LuWBK8B3YxU6_v58uOTmQrSAmhMIqUuq0EETjPBrzOVHBGNZuqzYrv_yUhnNyzpc_R9_EF-V9V_S3TWtZ3ZwgA", "credit": "BOAT RENTALS CANADA"}], "added": "2026-08-19"}, {"id": "mary-lake-marina", "name": "Mary Lake Marina", "categories": ["boat"], "town": "Utterson", "region": "muskoka", "lat": 45.2, "lng": -79.33, "blurb": "Small marina south of Huntsville renting Glastron and Tahoe runabouts, pontoon boats, and Lund fishing boats on Mary Lake.", "rents": ["runabout boats", "pontoon boats", "Lund fishing boats"], "priceSignal": null, "phone": "705-789-8359", "website": "https://marylakemarina.com", "bookingMode": "phone-only", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://marylakemarina.com/", "placeId": "ChIJHQOZv0FwKk0RH-7X77vZmIc", "rating": 4.8, "reviewCount": 92, "photos": [{"name": "places/ChIJHQOZv0FwKk0RH-7X77vZmIc/photos/AWCwydinT3aGtzs28LPaqEgK8bO3C4xnD3KW6Gh3nhteo59_0uupxPnbOg6mz64740LC9HCNciqrhA02JaOqzvvCBDm6044zLpzaa7A6EmIFMqHW8r4OYE2cgI53a0Pq7M3ETWr7ubp_VAhswoOpf3NotyzOVOyczSeFsGjjmysm1zSPt8dljMVqA7SfaU-v4sW4aK2CTovNi5Q4Jue65wrW8h9NQBfiiMx2Mjj9HDReENxFvmDK95OCXCbesOXJOoaHC1Ix6F_R6NexjhgPobJqb_hrVx-oAT6-JEPabyGcXqd0ztJt5a_-qpAUKAXcsM5jMmGn6sFUS60RfvcOrt21etlFMMYxQ3hzMl9W2fErLPQkl9FhgKOWQFE0tiHfVJqZqOhXm6duhOjEK6m-iqPM6xu9EMsII6uFtQi3WwkdqulOhQ", "credit": "Mary Lake Marina"}, {"name": "places/ChIJHQOZv0FwKk0RH-7X77vZmIc/photos/AWCwydgCx_nZEXCByOdHowwH39XLn5WyV_wyaogk93FudTGwLkYGljn4avLKcJMMxsBFJ_jaw-hjG9OjDq9Mgu1H-DpS679vnn_5hN5pPMvgh3DJVRXyjcZps1D9YVME34MsjewFtkedmCFGqo_A8j9RU-Hk8LLDr3REOXVYaN5DSUDAZtfOdEE_a62-d6cUll2nT97GUH_dQ7zdX1gMY-gtzQh5eoDoW36YMeVLNzpQ6ovrm2at8w6sUh4Ml3X7FZ5pejCEffuReEjhWB60Bolp1MDhDeK-DpiTrNrgZCECdbr3PUiQtS0YLPw5i3JRtkFFmliXsDa33duGet-fczsbrDRJf1eigMp_7EhgPow9mPMdDENq0x3EAba_Gbj9HQ8bADYP9r1ZpTm4jBVeTWhY_lInNB7F8iMCGWEGyOyn19liZJE", "credit": "Mary Lake Marina"}, {"name": "places/ChIJHQOZv0FwKk0RH-7X77vZmIc/photos/AWCwydi7iP5xHlUpQnOfweS2CV9TKYdETFw7iKfqDlaGgDhcn3KieZpELGoUI1pj15n-jXLtVb0Hhdu50RoOFJx0JSe0FrVSrkGlkFj5_dP5ozZrJ0oB_V49gS-VgvUds-f-JQW0BCAkQrJeqdPTyq1ZQF1cEVetYeWoA7VGZuGru-KwydEZmHySW6oIrWv6mBhBCpatufkuk6huM-8w_Ypcx7J81Pa7mityrgCqrgpisIjVzrDFHbwZaRkPzEWne9G6b0DBIEX4-BqIF25Jft_jXWS1YM2S30GLwXRF5iFAW9Lbtuj1uHV7Ex2H8nxbPtpvvmc_oG_p8YnAtK4_kmioDC7-3XLmfBRhCYpuh6jTUGsuTRwlWhKuSVeU2d5_f_vDa2TG60tLTMqrdn36FQ080We9BiXVi8zi6Gb2nUs78J5X_g", "credit": "Laura P"}], "added": "2026-08-19"}, {"id": "xtreme-watersports", "name": "XTREME WaterSports", "categories": ["jet-ski", "boat"], "town": "Grand Bend", "region": "lake-huron", "lat": 43.31, "lng": -81.76, "blurb": "Grand Bend's longest-running watersports operator, renting jet skis and pontoon boats and running speed boat charters on Lake Huron.", "rents": ["jet skis", "pontoon boats", "speed boat charters"], "priceSignal": null, "phone": "519-238-5816", "website": "https://www.xtremewatersports.ca", "bookingMode": "online", "siteQuality": "dated", "verified": "2026-08-15", "source": "https://www.xtremewatersports.ca/", "placeId": "ChIJEWabzjs6L4gRVICc0vH7WNA", "rating": 4.5, "reviewCount": 555, "photos": [{"name": "places/ChIJEWabzjs6L4gRVICc0vH7WNA/photos/AWCwydiTmE0VhY9LC6xxLGoy6ivgkTOg6kVo8eUPE1wEgyhfQh0Qx8wNpdHEzqS8ea3gUP7nArBPjfr9WWB_K7jjpQoEb4BqeWrHQwuQqazDRJZEcjqOfKEoaq2aw4SieX7FqILaCCHNmOpXukjxBo_N7A8YeNBIOmMMDzf5DXeU11pzHY9PRA8Dn63F9TKPOuRNakTsitEg4pEXWU_C5Xr5QKjJxembbVXY5vfpXE6MhhVvWzdmedgJYrogUyHKkIcWk0BC-spsaSJXGFo12BulHeIfN_KsFYGR11TkQE-BcPcPUggNh1hevDjDVekoNzCtJk0w64vUpNoF9OE_bo25avwOS2uizSN-2ASkKrXaI2rblhXZqaabe1ae-j-Z9Db8s7EPObLN7DYcCHoYSjpOKa1fB_ZCTT7x8T1AMZCN4e2IqeUOJmEZX3VOQf11Zw", "credit": "Xtreme Watersports Jet Ski Rentals"}, {"name": "places/ChIJEWabzjs6L4gRVICc0vH7WNA/photos/AWCwydgVJ4SnB0pRXerY2QY2k-ddkxvOSUHT-CSq1xcpI3AvIdDI9rTbaSmBX807PTjyxyC6WQwgsyqGWe9E8S-gs68LQOwEUzY-a_bS4oN1Xos40N6yFp5DV5b0CQe_F8z6gkYRIW6bxPw66LU8GGJ2qU4OFjRAP9Ao--ioiJgefoNm_IRjUWxnLIYTcN-e7FjpXj2cjB3eo0a12d63URSEf_RD2KeKKdk5VHEAtTcIX50EzZP5Uchf1I7qipA-hoomt2NXNE-0kcEbfkjT-_NUfclcADjJAx0O_SZW3V7gmQc_zSzuyoiiRMXQ1rKM9gTrN5X_MKM8QBQ2WYNwahvjIOrCrF00ozRLYpLN4d9gaeL_YfoC6jmpisKxMgZAPHLLBwwoGVyEjzeBhE2jbOqG0Phj_YYALkBR8hBIKYSMKorHE9u6BRIedIJYyJLNog", "credit": "Rakesh Patel"}, {"name": "places/ChIJEWabzjs6L4gRVICc0vH7WNA/photos/AWCwydin3vTNdp79IQJOJ_kzWeaqmOK-ldaGNzpxYRNeor6dmSz9pVo8Y7vUsfsh_HAHlqnxW02D1gsCa41J_i1EvcdfJ0ltnLiC_t195cwx4MqNX17ytPeiNLry9SHPjTs7sqWY_t0ibskAyc_4YoRmarLv_XhzvPToAzJhwjQcD8r4EHc9qrOfHeyMn1eemj63wo7bk_VTU136utFYI8x25Syq5LxFNNedMZ1R1Z7fqO7D9is57DNzfNvlQJCKInZX_lifwGhSrK-x2u3xhfBdz33seJnoEOu__vLHthgqTFoEHuJh3yLFS7qSoTHhAJE69cLV6d4MFN3MsO3j-D-ApLf_vvfRWJv_JJWvlUegVu1eZ1xJbkd2ckw6nzMl4QmwuZaOlRgs5cTxDzdaPvq-NOJ2VvrmaREDQ-b1B2uZcbZV4hSnIFfaiy71vgfyWA", "credit": "Sarah Smith"}], "added": "2026-08-19"}];</script>
+<script>window.__MAPS_KEY = "AIzaSyDSPqUMsDZyZquGpMqqCFaAWP2Uijl2gQs";</script>
+<style>#jl-flag{position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#0B3EA8;color:#fff;font:600 12px/1.45 system-ui,sans-serif;text-align:center;padding:6px 10px}</style>
+</head>
+<body>
+
+<header class="hdr" id="hdr">
+  <div class="wrap hdr-in">
+    <a class="logo" href="#top">
+      <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18l-2.4-4.5a2 2 0 0 0-1.8-1.1H7.2a2 2 0 0 0-1.8 1.1L3 17Z"/><path d="M12 11V4"/><path d="M12 4l5 3-5 2"/></svg></span>
+      JourneyLane
+    </a>
+    <div class="hdr-search" id="hdrSearch">
+      <input id="qTop" type="search" placeholder="Search boats, ATVs, a town…" aria-label="Search rentals">
+      <button class="go" id="goTop" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+    </div>
+    <nav class="hdr-nav">
+      <a class="nav-link" href="#directory">Browse</a>
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="hdr-cta" href="#operators">List your business</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap hero-in">
+      <span class="eyebrow"><i class="dot-live"></i> <span id="liveCount">19 verified operators</span> · Ontario &amp; Outaouais</span>
+      <h1>Your whole weekend,<br><span class="grad">booked in one place</span></h1>
+      <p class="lede">Boats, jet skis, ATVs, kayaks and gear from real local operators — photos, ratings and phone numbers, all in one directory.</p>
+
+      <form class="search" id="searchForm" role="search">
+        <div class="fld">
+          <label for="qWhat">What</label>
+          <input id="qWhat" type="search" placeholder="Boat, jet ski, ATV…" autocomplete="off">
+        </div>
+        <div class="fld">
+          <label for="qWhere">Where</label>
+          <select id="qWhere"><option value="">Anywhere</option></select>
+        </div>
+        <button class="submit" type="submit" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      </form>
+
+      <div class="hero-trust">
+        <span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Every listing verified by hand</span>
+        <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Photos &amp; ratings from Google</span>
+        <span><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z"/><circle cx="12" cy="11" r="2.5"/></svg> Local operators only</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="cats-outer">
+    <div class="wrap"><div class="cats" id="cats"></div></div>
+  </div>
+
+  <section id="directory" class="wrap">
+    <div class="filters">
+      <span class="sel" id="selRegion"><select id="fRegion"><option value="">Any region</option></select><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="sel" id="selBook"><select id="fBook"><option value="">Any booking</option><option value="online">Books online</option><option value="phone-only">Phone only</option></select><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="sel" id="selSort"><select id="fSort"><option value="rating">Top rated</option><option value="reviews">Most reviewed</option><option value="name">A–Z</option></select><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+      <button class="chip-clear" id="clearAll" hidden>Clear all</button>
+      <button class="map-toggle" id="mapToggle"><svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 7Z"/><path d="M9 4v13M15 7v12.5"/></svg> <span id="mapToggleTxt">Show map</span></button>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="dir" id="dir">
+      <div class="grid" id="grid"></div>
+      <div id="mapPane"></div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <h2>How JourneyLane works</h2>
+      <p class="sub">One search instead of ten browser tabs and a dozen phone calls.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+          <h3>Search one place</h3>
+          <p>Every local operator in one directory — filter by what you want to rent, where you're going, and whether they book online.</p>
+        </div>
+        <div class="step">
+          <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z"/><circle cx="12" cy="11" r="2.5"/></svg></div>
+          <h3>See what's really there</h3>
+          <p>Real photos, real star ratings and review counts from Google — so you know what you're getting before you call.</p>
+        </div>
+        <div class="step">
+          <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h2.2a1 1 0 0 1 1 .8l.8 3.4a1 1 0 0 1-.5 1.1l-1.6.9a12 12 0 0 0 5.4 5.4l.9-1.6a1 1 0 0 1 1.1-.5l3.4.8a1 1 0 0 1 .8 1v2.2A1.5 1.5 0 0 1 18.5 20 14.5 14.5 0 0 1 4 5.5Z"/></svg></div>
+          <h3>Reach them directly</h3>
+          <p>Call or open their site in one tap. Bookings through JourneyLane are rolling out with our first operator partners.</p>
+        </div>
+        <div class="step">
+          <div class="ic"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M3 7h18M3 12h18M3 17h11"/></svg></div>
+          <h3>Plan the whole weekend</h3>
+          <p>Boat on Saturday, ATVs on Sunday, gear for both — the point of JourneyLane is the whole itinerary, not one rental.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="op-cta" id="operators">
+    <div class="wrap"><div class="op-in">
+      <h2>Rent out boats, ATVs or gear?</h2>
+      <p>We list local operators free, and we build rental businesses a better website. Tell us about yours and we'll be in touch.</p>
+      <div class="btns">
+        <a class="btn-w" href="mailto:journeylaneinc@gmail.com?subject=JourneyLane%20listing">Get listed free</a>
+        <a class="btn-o" href="mailto:journeylaneinc@gmail.com?subject=JourneyLane%20website">Ask about a website</a>
+      </div>
+    </div></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="f-top">
+      <div>
+        <a class="logo" href="#top" style="margin-bottom:9px"><span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18l-2.4-4.5a2 2 0 0 0-1.8-1.1H7.2a2 2 0 0 0-1.8 1.1L3 17Z"/><path d="M12 11V4"/><path d="M12 4l5 3-5 2"/></svg></span> JourneyLane</a>
+        <div style="max-width:330px">One app for every adventure — recreation rentals across Ontario and the Outaouais.</div>
+      </div>
+      <div class="f-links">
+        <a href="#directory">Browse rentals</a>
+        <a href="#how">How it works</a>
+        <a href="#operators">For operators</a>
+        <a href="mailto:journeylaneinc@gmail.com">Contact</a>
+        <a href="mailto:journeylaneinc@gmail.com?subject=Remove%20my%20listing">Remove my listing</a>
+      </div>
+    </div>
+    <div class="f-bot">
+      <span>© 2026 JourneyLane Inc.</span>
+      <span>Listings compiled from public information. Business photos and ratings from Google.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+"use strict";
+var OPS = (window.__OPERATORS || []).slice();
+var KEY = window.__MAPS_KEY || "";
+
+var CATS = [
+  {id:"",           label:"All",        icon:'<path d="M4 6h16M4 12h16M4 18h16"/>'},
+  {id:"boat",       label:"Boats",      icon:'<path d="M3 17h18l-2.4-4.5a2 2 0 0 0-1.8-1.1H7.2a2 2 0 0 0-1.8 1.1L3 17Z"/><path d="M12 11V4"/><path d="M12 4l5 3-5 2"/>'},
+  {id:"jet-ski",    label:"Jet skis",   icon:'<path d="M3 16.5c2 0 2 1.2 4 1.2s2-1.2 4-1.2 2 1.2 4 1.2 2-1.2 4-1.2"/><path d="M5 13.5 8 9h6l3 4.5"/><circle cx="15" cy="7" r="1.6"/>'},
+  {id:"atv",        label:"ATVs",       icon:'<circle cx="6" cy="16.5" r="3"/><circle cx="18" cy="16.5" r="3"/><path d="M6 16.5h4l2-6h4l2 6"/><path d="M10 10.5 9 7h4"/>'},
+  {id:"utv",        label:"UTVs",       icon:'<circle cx="6.5" cy="16.5" r="2.6"/><circle cx="17.5" cy="16.5" r="2.6"/><path d="M4 16.5V11h5l2-3h5l2 5v3.5"/><path d="M9 8v3"/>'},
+  {id:"kayak-canoe",label:"Kayaks",     icon:'<path d="M3 12c4-3 14-3 18 0-4 3-14 3-18 0Z"/><path d="M8 5l-2 3M16 19l2-3"/>'},
+  {id:"snowmobile", label:"Snowmobiles",icon:'<path d="M3 17h6l3-3h4l3 3"/><path d="M6 14V9h5l3 3"/><circle cx="18" cy="17" r="2"/>'},
+  {id:"ebike",      label:"E-bikes",    icon:'<circle cx="6" cy="16" r="3.2"/><circle cx="18" cy="16" r="3.2"/><path d="M6 16l4-7h5l3 7M9 9h4"/>'},
+  {id:"ice-hut",    label:"Ice huts",   icon:'<path d="M4 17V10l8-5 8 5v7"/><path d="M9 17v-4h6v4"/>'},
+  {id:"rv-trailer", label:"RV &amp; trailers", icon:'<path d="M3 15V8h13v7"/><path d="M16 11h3l2 3v1h-5"/><circle cx="8" cy="17" r="1.8"/><circle cx="17" cy="17" r="1.8"/>'}
+];
+var REGION_LABEL = {
+  "outaouais":"Outaouais", "ottawa-valley":"Ottawa Valley", "muskoka":"Muskoka",
+  "kawarthas":"Kawarthas", "lake-huron":"Lake Huron"
+};
+var CAT_LABEL = {};
+CATS.forEach(function(c){ if(c.id) CAT_LABEL[c.id] = c.label; });
+
+var state = {cat:"", region:"", book:"", sort:"rating", q:""};
+var saved = {};
+try { saved = JSON.parse(localStorage.getItem("jl_saved") || "{}"); } catch(e){ saved = {}; }
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function photoUrl(p){
+  return KEY && p ? "https://places.googleapis.com/v1/"+p.name+"/media?maxHeightPx=700&maxWidthPx=1000&key="+KEY : "";
+}
+function regionLabel(r){ return REGION_LABEL[r] || (r||"").replace(/-/g," "); }
+
+/* ── build the category strip ── */
+(function(){
+  var host = document.getElementById("cats");
+  CATS.forEach(function(c){
+    var n = c.id ? OPS.filter(function(o){ return (o.categories||[]).indexOf(c.id)>-1; }).length : OPS.length;
+    if(c.id && n===0) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "cat" + (c.id===state.cat ? " on" : "");
+    b.dataset.cat = c.id;
+    b.innerHTML = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">'+c.icon+'</svg>'+
+                  '<span>'+c.label+'</span><span class="n">'+n+'</span>';
+    b.addEventListener("click", function(){
+      state.cat = c.id;
+      Array.prototype.forEach.call(host.children, function(el){ el.classList.toggle("on", el.dataset.cat===c.id); });
+      render();
+    });
+    host.appendChild(b);
+  });
+})();
+
+/* ── populate the selects from real data ── */
+(function(){
+  var regions = {};
+  OPS.forEach(function(o){ if(o.region) regions[o.region] = (regions[o.region]||0)+1; });
+  var keys = Object.keys(regions).sort(function(a,b){ return regions[b]-regions[a]; });
+  var fR = document.getElementById("fRegion"), qW = document.getElementById("qWhere");
+  keys.forEach(function(k){
+    var t = regionLabel(k)+" ("+regions[k]+")";
+    fR.appendChild(new Option(t, k));
+    qW.appendChild(new Option(regionLabel(k), k));
+  });
+  document.getElementById("liveCount").textContent = OPS.length + " verified operators";
+})();
+
+/* ── filtering ── */
+function matches(o){
+  if(state.cat && (o.categories||[]).indexOf(state.cat)===-1) return false;
+  if(state.region && o.region!==state.region) return false;
+  if(state.book && o.bookingMode!==state.book) return false;
+  if(state.q){
+    var hay = [o.name,o.town,regionLabel(o.region),(o.rents||[]).join(" "),
+               (o.categories||[]).map(function(c){return CAT_LABEL[c]||c;}).join(" "),
+               o.blurb].join(" ").toLowerCase();
+    if(hay.indexOf(state.q.toLowerCase())===-1) return false;
+  }
+  return true;
+}
+function sorted(list){
+  var s = state.sort;
+  return list.sort(function(a,b){
+    if(s==="name") return a.name.localeCompare(b.name);
+    if(s==="reviews") return (b.reviewCount||0)-(a.reviewCount||0);
+    var d = (b.rating||0)-(a.rating||0);
+    return d !== 0 ? d : (b.reviewCount||0)-(a.reviewCount||0);
+  });
+}
+
+/* ── the card ── */
+function cardHTML(o){
+  var photos = (o.photos||[]).slice(0,3).filter(function(){ return !!KEY; });
+  var shots = photos.length
+    ? '<div class="slides">' + photos.map(function(p,i){
+        return '<img class="ph'+(i===0?' on':'')+'" data-i="'+i+'" src="'+photoUrl(p)+
+               '" alt="'+esc(o.name)+'" loading="lazy" decoding="async">';
+      }).join("") + '</div><div class="shimmer"></div>'
+      + (photos.length>1
+        ? '<button class="nav-a prev" aria-label="Previous photo"><svg viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg></button>'+
+          '<button class="nav-a next" aria-label="Next photo"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>'+
+          '<div class="dots">'+photos.map(function(_,i){ return '<i class="'+(i===0?'on':'')+'"></i>'; }).join("")+'</div>'
+        : "")
+      + (photos[0] && photos[0].credit ? '<span class="credit">Photo: '+esc(photos[0].credit)+' · Google</span>' : "")
+    : '<div class="noimg"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18l-2.4-4.5a2 2 0 0 0-1.8-1.1H7.2a2 2 0 0 0-1.8 1.1L3 17Z"/><path d="M12 11V4"/><path d="M12 4l5 3-5 2"/></svg></div>';
+
+  var cats = (o.categories||[]).map(function(c){ return CAT_LABEL[c]||c; });
+  var tag = o.bookingMode==="online" ? "Books online" : (o.siteQuality==="dated" ? "" : "");
+  var rate = o.rating
+    ? '<span class="c-rate"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.9 6.3.7-4.7 4.3 1.3 6.1L12 17l-5.6 3 1.3-6.1L3 9.6l6.3-.7L12 3Z"/></svg>'+
+      o.rating.toFixed(1)+' <span class="rc">('+(o.reviewCount||0)+')</span></span>'
+    : '<span class="c-rate rc" style="color:var(--faint);font-weight:500">New</span>';
+
+  return '<article class="card" data-id="'+esc(o.id)+'">'+
+    '<div class="shot">'+shots+
+      (tag ? '<span class="tag">'+tag+'</span>' : "")+
+      '<button class="save'+(saved[o.id]?" on":"")+'" aria-label="Save '+esc(o.name)+'" aria-pressed="'+(saved[o.id]?"true":"false")+'">'+
+        '<svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3Z"/></svg>'+
+      '</button>'+
+    '</div>'+
+    '<div class="c-body">'+
+      '<div class="c-top"><h3 class="c-name">'+esc(o.name)+'</h3>'+rate+'</div>'+
+      '<div class="c-where">'+esc(o.town)+' · '+esc(regionLabel(o.region))+'</div>'+
+      '<div class="c-rents">'+esc((o.rents&&o.rents.length?o.rents:cats).join(" · "))+'</div>'+
+      '<div class="c-price">'+(o.priceSignal
+          ? '<b>'+esc(o.priceSignal)+'</b>'
+          : '<span class="none">Ask for rates</span>')+'</div>'+
+      '<div class="c-acts">'+
+        (o.phone ? '<a class="act" href="tel:'+esc(o.phone.replace(/[^0-9+]/g,""))+'">Call</a>' : "")+
+        (o.website ? '<a class="act primary" href="'+esc(o.website)+'" target="_blank" rel="noopener noreferrer">Visit site</a>' : "")+
+      '</div>'+
+    '</div>'+
+  '</article>';
+}
+
+/* ── render ── */
+var grid = document.getElementById("grid");
+var countEl = document.getElementById("count");
+var clearBtn = document.getElementById("clearAll");
+var shown = [];
+
+function render(){
+  shown = sorted(OPS.filter(matches));
+  grid.innerHTML = shown.length
+    ? shown.map(cardHTML).join("")
+    : '<div class="empty"><svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'+
+      '<h3>Nothing matches those filters yet</h3>'+
+      '<p>We\'re adding operators every week — try widening your search.</p>'+
+      '<button type="button" id="resetInline">Clear all filters</button></div>';
+
+  var bits = [];
+  if(state.cat) bits.push(CAT_LABEL[state.cat]);
+  if(state.region) bits.push("in "+regionLabel(state.region));
+  if(state.book) bits.push(state.book==="online" ? "booking online" : "phone-only");
+  if(state.q) bits.push('matching "'+state.q+'"');
+  countEl.innerHTML = "<b>"+shown.length+"</b> "+(shown.length===1?"operator":"operators")+
+                      (bits.length? " · "+esc(bits.join(" · ")) : " across Ontario &amp; the Outaouais");
+
+  var dirty = !!(state.cat||state.region||state.book||state.q);
+  clearBtn.hidden = !dirty;
+  document.getElementById("selRegion").classList.toggle("active", !!state.region);
+  document.getElementById("selBook").classList.toggle("active", !!state.book);
+
+  wireCards();
+  if(mapOn) drawMarkers();
+}
+
+function wireCards(){
+  var reset = document.getElementById("resetInline");
+  if(reset) reset.addEventListener("click", clearAll);
+
+  grid.querySelectorAll(".ph").forEach(function(img){
+    if(img.complete && img.naturalWidth) img.classList.add("ready");
+    else img.addEventListener("load", function(){ img.classList.add("ready"); });
+    img.addEventListener("error", function(){
+      var shot = img.closest(".shot");
+      if(shot && !shot.querySelector(".noimg")){
+        var d = document.createElement("div");
+        d.className = "noimg";
+        d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18l-2.4-4.5a2 2 0 0 0-1.8-1.1H7.2a2 2 0 0 0-1.8 1.1L3 17Z"/><path d="M12 11V4"/><path d="M12 4l5 3-5 2"/></svg>';
+        shot.appendChild(d);
+      }
+      img.remove();
+    });
+  });
+
+  grid.querySelectorAll(".card").forEach(function(card){
+    var slides = card.querySelectorAll(".slides .ph");
+    var dots = card.querySelectorAll(".dots i");
+    var i = 0;
+    function go(n){
+      if(!slides.length) return;
+      i = (n + slides.length) % slides.length;
+      slides.forEach(function(s,k){ s.classList.toggle("on", k===i); });
+      dots.forEach(function(d,k){ d.classList.toggle("on", k===i); });
+    }
+    var p = card.querySelector(".prev"), n = card.querySelector(".next");
+    if(p) p.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); go(i-1); });
+    if(n) n.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); go(i+1); });
+
+    var sv = card.querySelector(".save");
+    if(sv) sv.addEventListener("click", function(e){
+      e.preventDefault(); e.stopPropagation();
+      var id = card.dataset.id;
+      if(saved[id]) delete saved[id]; else saved[id] = 1;
+      sv.classList.toggle("on", !!saved[id]);
+      sv.setAttribute("aria-pressed", saved[id] ? "true" : "false");
+      try { localStorage.setItem("jl_saved", JSON.stringify(saved)); } catch(err){}
+    });
+  });
+}
+
+/* ── controls ── */
+function clearAll(){
+  state.cat=""; state.region=""; state.book=""; state.q="";
+  document.getElementById("fRegion").value="";
+  document.getElementById("fBook").value="";
+  document.getElementById("qWhat").value="";
+  document.getElementById("qWhere").value="";
+  document.getElementById("qTop").value="";
+  Array.prototype.forEach.call(document.getElementById("cats").children, function(el){
+    el.classList.toggle("on", el.dataset.cat===""); });
+  render();
+}
+clearBtn.addEventListener("click", clearAll);
+document.getElementById("fRegion").addEventListener("change", function(){ state.region=this.value; render(); });
+document.getElementById("fBook").addEventListener("change", function(){ state.book=this.value; render(); });
+document.getElementById("fSort").addEventListener("change", function(){ state.sort=this.value; render(); });
+
+function runSearch(q, region){
+  state.q = (q||"").trim();
+  if(region !== undefined){ state.region = region; document.getElementById("fRegion").value = region; }
+  render();
+  document.getElementById("directory").scrollIntoView({behavior:"smooth", block:"start"});
+}
+document.getElementById("searchForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  runSearch(document.getElementById("qWhat").value, document.getElementById("qWhere").value);
+});
+document.getElementById("goTop").addEventListener("click", function(){
+  runSearch(document.getElementById("qTop").value);
+});
+document.getElementById("qTop").addEventListener("keydown", function(e){
+  if(e.key==="Enter"){ e.preventDefault(); runSearch(this.value); }
+});
+
+/* ── header states ── */
+var hdr = document.getElementById("hdr");
+var heroBottom = 320;
+window.addEventListener("scroll", function(){
+  var y = window.scrollY;
+  hdr.classList.toggle("scrolled", y > 4);
+  hdr.classList.toggle("compact", y > heroBottom);
+}, {passive:true});
+
+/* ── map ── */
+var mapOn = false, map = null, layer = null;
+document.getElementById("mapToggle").addEventListener("click", function(){
+  mapOn = !mapOn;
+  document.getElementById("dir").classList.toggle("split", mapOn);
+  document.getElementById("mapToggleTxt").textContent = mapOn ? "Hide map" : "Show map";
+  if(mapOn){
+    if(!map && window.L){
+      map = L.map("mapPane", {scrollWheelZoom:false}).setView([45.6,-76.3], 7);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom:18, attribution:'&copy; OpenStreetMap'
+      }).addTo(map);
+    }
+    setTimeout(function(){ if(map){ map.invalidateSize(); drawMarkers(); } }, 60);
+  }
+});
+function drawMarkers(){
+  if(!map || !window.L) return;
+  if(layer) layer.remove();
+  var pts = [];
+  layer = L.layerGroup();
+  shown.forEach(function(o){
+    if(typeof o.lat!=="number" || typeof o.lng!=="number") return;
+    pts.push([o.lat,o.lng]);
+    var icon = L.divIcon({
+      className:"", iconSize:[null,null],
+      html:'<div style="background:#0B1C2C;color:#fff;font:700 12px/1 \'Instrument Sans\',sans-serif;'+
+           'padding:7px 11px;border-radius:999px;box-shadow:0 2px 8px rgba(11,28,44,.3);white-space:nowrap;'+
+           'transform:translate(-50%,-50%)">'+(o.rating? o.rating.toFixed(1)+"★" : "•")+'</div>'
+    });
+    L.marker([o.lat,o.lng], {icon:icon}).addTo(layer)
+      .bindPopup('<strong>'+esc(o.name)+'</strong><br>'+esc(o.town)+
+                 (o.website? '<br><a href="'+esc(o.website)+'" target="_blank" rel="noopener">Visit site</a>':''));
+  });
+  layer.addTo(map);
+  if(pts.length) map.fitBounds(pts, {padding:[36,36], maxZoom:10});
+}
+
+render();
+})();
+</script>
+<div id="jl-flag">PREVIEW - work in progress, not a booking service. Business photos and ratings from Google. Listings shown from public information.</div>
+</body>
+</html>
