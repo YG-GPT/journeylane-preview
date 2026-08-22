@@ -685,6 +685,22 @@ function priceLabel(it){
    human-approved before it ships). */
 var STOCK_BASE = "/journeylane-preview/assets/stock/";
 var STOCK_CREDITS = window.__STOCK_CREDITS || {};   // class -> "creator · license"
+/* An operator with no photo of their own still gets a real picture: the
+   licensed illustration for what they rent, labelled as an illustration.
+   A blank tile on a business card reads as an unfinished directory. */
+function opFallback(o){
+  var cats = o.categories || [];
+  var sc = null;
+  for (var i = 0; i < cats.length && !sc; i++) {
+    sc = stockClass({category: cats[i], name: (o.name || "")});
+  }
+  if (PHOTO_MODE !== "match" || !sc) {
+    return '<div class="noimg"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18l-2.4-4.5a2 2 0 0 0-1.8-1.1H7.2a2 2 0 0 0-1.8 1.1L3 17Z"/><path d="M12 11V4"/><path d="M12 4l5 3-5 2"/></svg></div>';
+  }
+  var c = STOCK_CREDITS[sc];
+  return '<div class="slides"><img class="ph on" src="'+esc(STOCK_BASE+sc+'.jpg')+'" alt="'+esc(o.name)+'" loading="lazy" decoding="async"></div>'+
+         '<span class="credit" style="opacity:1">Illustration only'+(c ? ' · '+esc(c) : '')+'</span>';
+}
 function stockCreditText(it){
   var sc = stockClass(it);
   var c = sc && STOCK_CREDITS[sc];
@@ -1090,7 +1106,7 @@ function bizCardHTML(o){
           '<div class="dots">'+photos.map(function(_,i){ return '<i class="'+(i===0?'on':'')+'"></i>'; }).join("")+'</div>'
         : "")
       + (photos[0] && photos[0].credit ? '<span class="credit">Photo: '+esc(photos[0].credit)+' · Google</span>' : "")
-    : '<div class="noimg"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18l-2.4-4.5a2 2 0 0 0-1.8-1.1H7.2a2 2 0 0 0-1.8 1.1L3 17Z"/><path d="M12 11V4"/><path d="M12 4l5 3-5 2"/></svg></div>';
+    : opFallback(o);
 
   var cats = (o.categories||[]).map(function(c){ return CAT_LABEL[c]||c; });
   var tag = o.bookingMode==="online" ? "Books online" : (o.siteQuality==="dated" ? "" : "");
