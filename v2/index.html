@@ -1692,6 +1692,17 @@ function drawMarkers(){
 })();
 
 render();
+
+/* Deep link to ONE OPERATOR'S own listing: ...?op=muskoka-boat-rentals
+   This is what an operator gets sent in the outreach email — "here is your
+   listing" has to be a link, not an instruction to go hunting. */
+(function(){
+  var m = /[?&]op=([a-z0-9\-]+)/i.exec(location.search || "");
+  if(!m) return;
+  var id = m[1].toLowerCase();
+  if(!OPS_BY_ID[id]) return;
+  openOperator(id);
+})();
 })();
 </script>
 <div id="jl-flag">PREVIEW - work in progress, not a booking service. Business photos and ratings from Google. Listings shown from public information.</div>

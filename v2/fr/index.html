@@ -1692,6 +1692,17 @@ function drawMarkers(){
 })();
 
 render();
+
+/* Deep link to ONE OPERATOR'S own listing: ...?op=muskoka-boat-rentals
+   This is what an operator gets sent in the outreach email — "here is your
+   listing" has to be a link, not an instruction to go hunting. */
+(function(){
+  var m = /[?&]op=([a-z0-9\-]+)/i.exec(location.search || "");
+  if(!m) return;
+  var id = m[1].toLowerCase();
+  if(!OPS_BY_ID[id]) return;
+  openOperator(id);
+})();
 })();
 </script>
 <script>Object.assign(REGION_LABEL, {"laurentides": "Laurentides", "lanaudiere": "Lanaudière", "monteregie": "Montérégie", "estrie": "Estrie (Cantons-de-l'Est)", "mauricie": "Mauricie", "quebec-chaudiere": "Ville de Québec et Chaudière", "abitibi-temiscamingue": "Abitibi-Témiscamingue", "ottawa": "Ottawa", "outaouais": "Outaouais", "ottawa-valley": "Vallée de l’Outaouais", "thousand-islands": "Mille-Îles", "rideau-lakes": "Lacs Rideau", "cornwall-seaway": "Cornwall et la Voie maritime", "land-o-lakes": "Land O'Lakes", "toronto-gta": "Toronto et RGT", "niagara": "Niagara", "hamilton-halton": "Hamilton et Halton", "southwestern": "Sud-Ouest de l’Ontario", "lake-huron": "Lac Huron", "simcoe": "Lac Simcoe", "prince-edward-county": "Comté de Prince Edward", "kawarthas": "Kawarthas", "muskoka": "Muskoka", "haliburton": "Haliburton", "georgian-bay": "Baie Georgienne", "near-north": "Proche-Nord", "sudbury-manitoulin": "Sudbury et Manitoulin", "algoma": "Algoma", "northwest": "Nord-Ouest", "cochrane-timmins": "Cochrane et Timmins"}); Object.assign(WHAT_SYNONYMS, {"bateau": "boat", "bateaux": "boat", "ponton": "boat", "pontons": "boat", "chaloupe": "boat", "chaloupes": "boat", "pêche": "boat", "peche": "boat", "motomarine": "jet-ski", "motomarines": "jet-ski", "seadoo": "jet-ski", "sea-doo": "jet-ski", "jet ski": "jet-ski", "kayak": "kayak-canoe", "kayaks": "kayak-canoe", "canot": "kayak-canoe", "canots": "kayak-canoe", "canoë": "kayak-canoe", "canoe": "kayak-canoe", "planche à pagaie": "paddleboard", "planches à pagaie": "paddleboard", "planche a pagaie": "paddleboard", "sup": "paddleboard", "paddleboard": "paddleboard", "vtt": "atv", "quad": "atv", "quads": "atv", "quatre-roues": "atv", "quatre roues": "atv", "4 roues": "atv", "côte à côte": "utv", "côte-à-côte": "utv", "cote a cote": "utv", "sxs": "utv", "motoneige": "snowmobile", "motoneiges": "snowmobile", "skidoo": "snowmobile", "ski-doo": "snowmobile", "vélo électrique": "ebike", "velo electrique": "ebike", "vélos électriques": "ebike", "vélo": "ebike", "velo": "ebike", "vélos": "ebike", "vr": "rv-trailer", "roulotte": "rv-trailer", "roulottes": "rv-trailer", "caravane": "rv-trailer", "caravanes": "rv-trailer", "motorisé": "rv-trailer", "motorise": "rv-trailer", "campeur": "rv-trailer", "cabane à pêche": "ice-hut", "cabane a peche": "ice-hut", "cabane de pêche": "ice-hut", "pêche blanche": "ice-hut", "peche blanche": "ice-hut", "pêche sur glace": "ice-hut", "équipement": "other", "equipement": "other", "camping": "other", "tente": "other"});</script>
