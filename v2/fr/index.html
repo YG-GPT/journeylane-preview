@@ -698,11 +698,17 @@ var STOCK_CREDITS = window.__STOCK_CREDITS || {};   // class -> "creator · lice
    printed on the card, searchable ("B-014"), deep-linkable (?id=B-014), and
    click-to-copy so a note in his spreadsheet always points at the same thing. */
 var REVIEW_TAGS = (function(){
-  // Internal-only (his order 2026-08-23). On in the preview build; ?review=0
-  // hides them for a clean screenshot, ?review=1 forces them on.
+  // Internal-only (his order 2026-08-23), and OFF BY DEFAULT since 2026-08-25:
+  // the independent outreach audit found that any operator sent the link saw
+  // internal QA codes stamped on their own business card. Tags now appear
+  // only when someone deliberately asks for review mode - ?review=1, or the
+  // sticky flag that sets. Everyone else sees a clean site.
   var m = /[?&]review=([01])/.exec(location.search || "");
-  if(m) return m[1] === "1";
-  return window.__REVIEW_TAGS === true;
+  if(m){
+    try { localStorage.setItem("jl_review", m[1]); } catch(e) {}
+    return m[1] === "1";
+  }
+  try { return localStorage.getItem("jl_review") === "1"; } catch(e) { return false; }
 })();
 function lidHTML(id){
   if(!id || !REVIEW_TAGS) return "";
