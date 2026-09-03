@@ -1408,6 +1408,27 @@ function wireCards(container){
     else img.addEventListener("load", done);
     img.addEventListener("error", function(){
       var shot = img.closest(".shot");
+      /* HIS ORDER 2026-08-21: "MOVE THE ONES WITHOUT ANY GOOD LOOKING GOOGLE
+         IMAGES OUT OF THE HOMEPAGE". buildHomeRows() enforces that with
+         ownPhoto(), but ownPhoto can only ask whether a photo URL EXISTS - it
+         cannot know the operator's own server will refuse it. Measured
+         2026-09-02 on the live site: three homepage cards (Rent Our Ski,
+         Algonquin Outfitters Opeongo and Oxtongue) hot-link photos that return
+         200 to a plain request and FAIL from yg-gpt.github.io, because those
+         servers block hot-linking by referrer. The gate passed them; the page
+         then drew the empty tile his order was about.
+
+         So the shop window finishes the job at runtime: a homepage card whose
+         photo actually failed is REMOVED, not patched with a tile. It stays in
+         the directory below, where an honest tile is the right answer. A row
+         left too thin to look deliberate goes with it. */
+      var card = img.closest(".card");
+      var row = card && card.closest(".hrow");
+      if(row){
+        card.remove();
+        if(row.querySelectorAll(".card").length < 4) row.remove();
+        return;
+      }
       if(shot && !shot.querySelector(".noimg")){
         var d = document.createElement("div");
         d.className = "noimg";
